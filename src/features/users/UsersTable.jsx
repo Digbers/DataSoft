@@ -25,10 +25,15 @@ const UsersTable = () => {
                 cell: info => info.getValue().map(role => role.roleEnum).join(", ")
             },
             {
-                accessorKey: "roles",
-                id: 'permissions',  
-                header: () => <span>Permisos</span>,
-                cell: info => info.getValue().flatMap(role => role.permissionsList.map(permission => permission.name)).join(", ")
+                id: 'expander',  // Identificador único para la columna de expansión
+                header: () => null,  // Sin encabezado para la columna de expansión
+                cell: ({ row }) => (
+                    row.getCanExpand() ? (
+                        <span {...row.getToggleExpandedProps()}>
+                            {row.getIsExpanded() ? "▼" : "▶"}
+                        </span>
+                    ) : "no expandible"
+                ),
             },
         ],
         []

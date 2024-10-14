@@ -1,7 +1,8 @@
+
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 
-const TextInput = ({ text, setText, placeholder, typeInput, sizeClass }) => {
+const TextAreaInput = ({ text, setText, placeholder, typeInput }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   const handleFocus = () => setIsFocused(true);
@@ -12,21 +13,21 @@ const TextInput = ({ text, setText, placeholder, typeInput, sizeClass }) => {
       <label
         className={`absolute left-4 transition-all duration-300 ${
           isFocused || text
-            ? ` text-sm -top-3 text-purple-600 font-bold`
-            : `${sizeClass === 'md' ? 'top-3' : 'top-1'} text-gray-500`
+            ? "text-sm -top-3 text-purple-600 font-bold"
+            : "top-1 text-gray-500"
         }`}
-        style={{ pointerEvents: 'none'}} 
+        style={{ pointerEvents: 'none', WebkitTextStroke: '0.2px white' }} 
       >
         <span
           className={`transition-all duration-100 ${
-            isFocused || text ? 'text-purple-600 dark:text-purple-50 bg-white rounded-lg' : 'text-gray-500 dark:text-zinc-100'
+            isFocused || text ? 'text-purple-600 dark:text-purple-50' : 'text-gray-500 dark:text-zinc-100'
           }`}
         >
           {placeholder}
         </span>
       </label>
       <input
-        className={`w-full text-sm ${sizeClass === 'md' ? 'px-4 py-3' : 'px-2 py-1 h-8'} bg-white dark:bg-gray-600 border-gray-300 rounded-md shadow-sm focus:outline-none border-2 focus:border-purple-400`}
+        className="w-full h-8 text-sm px-2 py-1 bg-white dark:bg-gray-600 border-gray-300 rounded-md shadow-sm focus:outline-none border-2 focus:border-purple-400"
         type={typeInput}
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -36,15 +37,12 @@ const TextInput = ({ text, setText, placeholder, typeInput, sizeClass }) => {
     </div>
   );
 }
-TextInput.defaultProps = {
-  sizeClass: ''
-};
-TextInput.propTypes = {
+
+TextAreaInput.propTypes = {
   text: PropTypes.string.isRequired,
   setText: PropTypes.func.isRequired,
   placeholder: PropTypes.string.isRequired,
   typeInput: PropTypes.string.isRequired,
-  sizeClass: PropTypes.string
 }
 
-export default TextInput;
+export default TextAreaInput;

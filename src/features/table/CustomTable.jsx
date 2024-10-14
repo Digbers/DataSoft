@@ -4,8 +4,10 @@ import {
    useReactTable,
    getCoreRowModel,
    flexRender,
+   getExpandedRowModel,
 } from '@tanstack/react-table';
-import axios from "../../config/axiosConfig";
+import axios from "../../config/axiosConfig";   
+import {getMenusById} from "../../features/menu/menuService";
 
 const CustomTable = ({ apiEndpoint, columns, defaultPageSize = 20 }) => {
     const [data, setData] = useState([]);
@@ -13,11 +15,20 @@ const CustomTable = ({ apiEndpoint, columns, defaultPageSize = 20 }) => {
     const [loading, setLoading] = useState(false);
     const [pageIndex, setPageIndex] = useState(0);
     const [pageSize, setPageSize] = useState(defaultPageSize);
+    const [filters, setFilters] = useState({});
+    const [expanded, setExpanded] = useState({});
+    const [subRowData, setSubRowData] = useState({});
 
-    const fetchData = useCallback(async (pageIndex, pageSize) => {
+    const fetchData = useCallback(async (pageIndex, pageSize, filters) => {
         setLoading(true);
         try {
-            const response = await axios.get(`${apiEndpoint}?page=${pageIndex}&size=${pageSize}`);
+            const response = await axios.get(apiEndpoint, {
+                params: {
+                    page: pageIndex,
+                    size: pageSize,
+                    ...filters,
+                },
+            });
             setData(response.data.content || []);
             setPageCount(response.data.totalPages || 0);
         } catch (error) {
@@ -29,12 +40,32 @@ const CustomTable = ({ apiEndpoint, columns, defaultPageSize = 20 }) => {
     }, [apiEndpoint]);
 
     const fetchDataCallback = useCallback(() => {
-        fetchData(pageIndex, pageSize);
-    }, [pageIndex, pageSize, fetchData]);
+        fetchData(pageIndex, pageSize, filters);
+    }, [pageIndex, pageSize, filters, fetchData]);
 
     useEffect(() => {
         fetchDataCallback();
     }, [fetchDataCallback]);
+
+    const fetchMenus = async (userId) => {
+        getMenusById(userId)
+        .then(response => {
+            return response.data;
+        })
+        .catch(error => {
+            console.error('Error fetching menus:', error);
+            return [];
+        });
+
+    };
+
+    const handleFilterChange = (columnId, value) => {
+        setFilters(prevFilters => ({
+            ...prevFilters,
+            [columnId]: value,
+        }));
+        setPageIndex(0); // Reset to first page whenever filters change
+    };
 
     const table = useReactTable({
         data,
@@ -45,9 +76,27 @@ const CustomTable = ({ apiEndpoint, columns, defaultPageSize = 20 }) => {
                 pageIndex,
                 pageSize,
             },
+            columnFilters: filters,
+            expanded,
         },
         manualPagination: true,
         getCoreRowModel: getCoreRowModel(),
+        getExpandedRowModel: getExpandedRowModel(),
+        onExpandedChange: (newExpanded) => {
+            setExpanded(newExpanded);
+            // Buscar datos para filas expandidas
+            console.log(newExpanded)
+            Object.keys(newExpanded).forEach((rowIndex) => {
+                const row = table.getRowModel().rows[rowIndex];
+                const rowId = row.original.id;
+                if (newExpanded[rowIndex] && !subRowData[rowId]) {
+                    fetchMenus(rowId).then(subRows => {
+                        setSubRowData((prev) => ({ ...prev, [rowId]: subRows }));
+                        console.log("subRows: ", subRows);
+                    });
+                }
+            });
+        },
         onPaginationChange: updater => {
             if (typeof updater === 'function') {
                 const newPagination = updater({
@@ -60,8 +109,10 @@ const CustomTable = ({ apiEndpoint, columns, defaultPageSize = 20 }) => {
                 setPageIndex(updater.pageIndex);
                 setPageSize(updater.pageSize);
             }
-        }
+        },
+        onColumnFiltersChange: setFilters,
     });
+
 
     return (
         <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -73,26 +124,39 @@ const CustomTable = ({ apiEndpoint, columns, defaultPageSize = 20 }) => {
                                 <th key={header.id} className="px-6 py-3">
                                     {header.isPlaceholder
                                         ? null
-                                        : flexRender(header.column.columnDef.header, header.getContext())}
+                                        : (
+                                            <>
+                                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                                <div>
+                                                    <input
+                                                        value={filters[header.id] || ''}
+                                                        onChange={e => handleFilterChange(header.id, e.target.value)}
+                                                        placeholder={`Filtrar ${typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : ''}`}
+                                                        className="mt-2 p-1 border border-gray-300 rounded-md"
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
                                 </th>
                             ))}
                         </tr>
                     ))}
                 </thead>
                 <tbody>
-                {loading ? (
+                    {loading ? (
                         <tr>
                             <td colSpan={columns.length} style={{ textAlign: "center" }}>Cargando...</td>
                         </tr>
                     ) : (
                         table.getRowModel().rows.map(row => (
-                            <tr key={row.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                {row.getVisibleCells().map(cell => (
-                                    <td key={cell.id} className="px-6 py-4">
-                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                    </td>
-                                ))}
-                            </tr>
+
+                                <tr key={row.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    {row.getVisibleCells().map(cell => (
+                                        <td key={cell.id} className="px-6 py-4">
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </td>
+                                    ))}
+                                </tr>
                         ))
                     )}
                 </tbody>

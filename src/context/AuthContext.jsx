@@ -8,7 +8,11 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null); 
+  const [userCode, setUserCode] = useState(null);
   const [authorities, setAuthorities] = useState(null);
+  const [sesionEmpId, setSesionEmpId] = useState(null);
+  const [sesionAlmacenId, setSesionAlmacenId] = useState(null);
+  const [sesionPuntoVentaId, setSesionPuntoVentaId] = useState(null);
 
   const fetchDataCallback = useCallback(() => {
     const token = localStorage.getItem('token');
@@ -16,13 +20,35 @@ export function AuthProvider({ children }) {
     if (token) {
 
       const decodedToken = jwtDecode(token);
-      if (decodedToken.exp * 1000 > Date.now()) {
+      const exp = decodedToken.exp;
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (currentTime <= exp) {
         setIsAuthenticated(true);
+        if (decodedToken.sesionEmpId !== null){
+          console.log("sesionEmpId: "+decodedToken.sesionEmpId);
+          setSesionEmpId(decodedToken.sesionEmpId);
+          console.log("sesionAlmacenId: "+decodedToken.sesionAlmacenId);
+          setSesionAlmacenId(decodedToken.sesionAlmacenId);
+          console.log("sesionPuntoVentaId: "+decodedToken.sesionPuntoVentaId);
+          setSesionPuntoVentaId(decodedToken.sesionPuntoVentaId);
+        }
+        console.log("usercodigo: "+decodedToken.usercodigo);
+        setUserCode(decodedToken.usercodigo);
         setUser(decodedToken.sub);
+        console.log("user: "+ decodedToken.sub);
         setAuthorities(decodedToken.authorities);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       } else {
         localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        setUser(null);
+        setUserCode(null);
+        setAuthorities(null);
+        setSesionEmpId(null);
+        setSesionAlmacenId(null);
+        setSesionPuntoVentaId(null);
+        axios.defaults.headers.common['Authorization'] = null;
       }
     }
   }, []);
@@ -35,21 +61,38 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', token);
     const decodedToken = jwtDecode(token);
     setIsAuthenticated(true);
-    setUser(decodedToken);
+    setUser(decodedToken.sub);
+    setUserCode(decodedToken.usercodigo);
     setAuthorities(decodedToken.authorities);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
+  const loginComplete = (token) => {
+    localStorage.setItem('token', token);
+    const decodedToken = jwtDecode(token);
+    setIsAuthenticated(true);
+    setUser(decodedToken.sub);
+    setUserCode(decodedToken.usercodigo);
+    setAuthorities(decodedToken.authorities);
+    setSesionEmpId(decodedToken.sesionEmpId);
+    setSesionAlmacenId(decodedToken.sesionAlmacenId);
+    setSesionPuntoVentaId(decodedToken.sesionPuntoVentaId);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
 
   const logout = () => {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
     setUser(null);
+    setUserCode(null);
     setAuthorities(null);
+    setSesionEmpId(null);
+    setSesionAlmacenId(null);
+    setSesionPuntoVentaId(null);
     delete axios.defaults.headers.common['Authorization'];
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, user, authorities }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, user, authorities, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId, loginComplete, userCode }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,15 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import PropTypes from 'prop-types';
-
-const Navbar = ({ menus, user }) => {
+import { useAuth } from '../../context/AuthContext';
+import avicola from '../../assets/avicola.png';
+const Navbar = ({ menus, user, datosEmp }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navRef = useRef(null);
 
+  const { logout } = useAuth();
+
   const toggleNavbar = () => {
-    setIsOpen(!isOpen);
+    setIsOpen(prevState => !prevState);
+  };
+
+  const handleClickLogout = () => {
+    logout();
+    window.location.href = '/login';      
   };
 
   const toggleSubmenu = (menuId) => {
@@ -19,6 +27,7 @@ const Navbar = ({ menus, user }) => {
       [menuId]: !prevState[menuId]
     }));
   };
+
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
@@ -38,57 +47,91 @@ const Navbar = ({ menus, user }) => {
   }, []);
 
   const renderMenu = (menu) => (
-    <li key={menu.id} className="text-sm lg:text-base py-1">
-      <div className="flex justify-items-start w-full">
+    <li key={menu.id} className={`text-sm ${isCollapsed ? 'p-0' : 'py-1'} transition-all w-full`}>
+      <div className={`flex justify-evenly w-full ${isCollapsed ? 'justify-center' : 'justify-evenly'} hover:bg-gray-200 rounded-md`}>
         {menu.menuUrl === '/' ? (
-          <button onClick={() => toggleSubmenu(menu.id)} className="flex items-center text-gray-800 hover:text-blue-600 hover:animate-pulse">
-            <i className={`fas ${menu.icon} mr-2`}></i>
+          <button
+            onClick={() => toggleSubmenu(menu.id)}
+            className={`${
+              openSubmenus[menu.id] ? 'bg-slate-300 dark:bg-slate-100' : 'bg-transparent'
+            } glassmorphism-effect w-full flex py-3 justify-evenly text-left text-gray-800 rounded-md transition-all duration-300 ease-in-out`}
+          >
+            <i className={`fas ${menu.icon} ${isCollapsed ? '' : 'mr-2'}`}></i>
             {!isCollapsed && menu.menuName}
             <i className={`fas fa-chevron-${openSubmenus[menu.id] ? 'up' : 'down'} ml-2`}></i>
           </button>
         ) : (
-          <Link to={menu.menuUrl} className="flex items-center text-gray-800 hover:text-blue-600 hover:animate-pulse">
-            <i className={`fas ${menu.icon} mr-2`}></i>
+          <Link
+            to={menu.menuUrl}
+            className={`flex w-full items-center ${isCollapsed ? 'justify-center' : 'justify-center'} p-2 text-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 hover:bg-gray-200 rounded-md glassmorphism-effect transition-all duration-300 ease-in-out`}
+          >
+            <i className={`fas ${menu.icon} ${isCollapsed ? '' : 'mr-2'} dark:text-gray-100`}></i>
             {!isCollapsed && menu.menuName}
           </Link>
         )}
       </div>
       {menu.submenus && menu.submenus.length > 0 && openSubmenus[menu.id] && (
-        <ul className="pl-4 mt-2 space-y-2">
-          {menu.submenus.map(submenu => renderMenu(submenu))}
+        <ul className={`${isCollapsed ? 'p-0' : ''}`}>
+          {menu.submenus.map((submenu) => renderMenu(submenu))}
         </ul>
       )}
     </li>
   );
 
   return (
-    <div className="rounded-lg bg-gradient-to-b relative flex flex-col items-center justify-between" ref={navRef}>
-      <button 
-        className="absolute top-4 left-4 p-2 text-gray-800 bg-gray-200 rounded-md md:hidden"
-        onClick={toggleNavbar}
+    <div className="bg-white dark:bg-gray-900 relative flex flex-col items-center justify-between" ref={navRef}>
+      {!isOpen && (
+        <button
+          className="absolute top-4 left-4 p-2 text-gray-800 bg-gray-200 rounded-md md:hidden z-10 transition-all duration-300 ease-in-out"
+          onClick={toggleNavbar}
+        >
+          <i className="fas fa-bars"></i>
+        </button>
+      )}
+      
+      <nav
+        className={` shadow-md fixed top-0 left-0 h-full flex justify-between flex-col bg-opacity-85 text-white transition-transform transform ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 md:static md:h-full lg:${isCollapsed ? 'w-16' : 'w-48'} ${
+          isCollapsed ? 'w-16' : 'w-48'
+        } glassmorphism-effect`}
+        style={{ zIndex: 1000 }}
       >
-        <i className="fas fa-bars"></i>
-      </button>
-      <nav className={`rounded-lg fixed top-0 left-0 h-full flex justify-between flex-col dark:bg-green-300 dark:text-gray-200 bg-green-400 text-white transition-transform transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:h-full lg:${isCollapsed ? 'w-16' : 'w-48'} ${isCollapsed ? 'w-16' : 'w-48'}`}>
-        <ul className="flex flex-col mt-5 w-full p-4 items-start space-y-4 md:space-y-0">
-          {menus.map(menu => renderMenu(menu))}
+        <ul className="flex flex-col w-full items-start">
+          <div className={` bg-opacity-20 w-full rounded-b-lg transition-all duration-400 ease-in-out text-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 hover:bg-slate-200 bg-green-500 rounded-sm`}>
+            <div className="items-center justify-center mb-4 md:mb-0  md:flex">
+              <img className={`w-15 h-15 md:w-28 md:h-28 object-contain animate-pulse`} src={avicola} alt="Avicola Logo" />
+            </div>
+              <h3 className={`text-lg font-bold ${isCollapsed ? 'text-base' : 'text-xl'}`}>{datosEmp.nombreEmpresa}</h3>
+              <h3 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{datosEmp.nombreAlmacen}</h3>
+              <h3 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{datosEmp.nombrePuntoVenta}</h3>
+          </div>
+          {menus.map((menu) => renderMenu(menu))}
         </ul>
-        <div className="flex flex-col items-center justify-center p-4 space-y-4">
-          <div className="flex items-center p-2 text-gray-800 bg-white rounded-md w-full">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex items-center p-2 text-gray-800 bg-white rounded-md w-full glassmorphism-effect">
             <i className="fas fa-user mr-2"></i>
             <h1 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{user}</h1>
           </div>
-          <button className="flex items-center p-2 text-gray-800 bg-white rounded-md w-full">
+          <button
+            type="button"
+            onClick={handleClickLogout}
+            className="flex items-center p-2 text-gray-800 bg-white rounded-md w-full glassmorphism-effect transition-all duration-300 ease-in-out"
+          >
             <i className="fas fa-sign-out mr-2"></i>
             {!isCollapsed && 'Cerrar Sesión'}
           </button>
-          <button className={`flex items-center p-2 text-gray-800 bg-transparent rounded-md w-full ${isCollapsed ? 'bg-white' :'bg-transparent'}`} onClick={toggleCollapse}>
+          <button
+            type="button"
+            className={`flex items-center p-2 text-gray-800 rounded-md w-full ${
+              isCollapsed ? 'bg-white' : 'bg-transparent'
+            } glassmorphism-effect transition-all duration-300 ease-in-out`}
+            onClick={toggleCollapse}
+          >
             <i className={`fas ${isCollapsed ? 'fa-chevron-right mr-2' : 'fa-chevron-left'} mr-2`}></i>
           </button>
         </div>
-
       </nav>
-      
     </div>
   );
 };
@@ -103,7 +146,8 @@ Navbar.propTypes = {
     icon: PropTypes.string,
     submenus: PropTypes.arrayOf(PropTypes.object)
   })).isRequired,
-  user: PropTypes.string
+  user: PropTypes.string,
+  datosEmp: PropTypes.object
 };
 
 export default Navbar;

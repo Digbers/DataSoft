@@ -1,0 +1,1 @@
+export const API_MENU_ENPOINT = 'http://localhost:8080/auth/menus'

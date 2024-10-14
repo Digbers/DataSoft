@@ -7,6 +7,7 @@ import TextInput from '../../components/inputs/TextInput';
 import { useAuth } from '../../context/AuthContext';
 import Alert from '../../components/alerts/Alert';
 import ParticlesComponent from '../../components/Particles';
+//import { useNavigate } from 'react-router-dom';
 
  const Login = () => {
   const [username, setUsername] = useState('');
@@ -15,6 +16,7 @@ import ParticlesComponent from '../../components/Particles';
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const { login } = useAuth();
+  //const navigate = useNavigate();
 
   const handleSubmit =  async (event) => {
     event.preventDefault();
@@ -26,7 +28,8 @@ import ParticlesComponent from '../../components/Particles';
       if (response.data.status) {
         console.log(response.data.jwt);
         login(response.data.jwt);
-        window.location.href = '/main'; 
+        //navigate('/empresa');
+        //window.location.href = '/empresa'; 
          
       } else {
         console.error('Error:', response.data.message);
@@ -55,65 +58,65 @@ import ParticlesComponent from '../../components/Particles';
   };
 
   return (
-    <>
-      <div
-        className="absolute top-0 left-0 bg-gradient-to-b from-green-950 via-green-600 to-green-500 bottom-0 leading-5 h-full w-full overflow-hidden">
-        <ParticlesComponent id="tsparticles" className="absolute top-0 left-0 w-full h-full" />
-        <div
-          className="relative flex md:flex-row items-center justify-center bg-transparent rounded-3xl shadow-xl h-full">
-          <div className="hidden items-center sm:block justify-center lg:px-14 sm:max-w-4xl xl:max-w-md z-10">
-            <div className="self-center flex flex-col items-center text-gray-300">
-              <img className="w-48 h-48" src={avicola} alt="Avicola" />
-            </div>
-          </div>
+    <div className="absolute flex items-center justify-center min-h-screen bg-gradient-to-br from-green-600 via-blue-500 to-purple-500 overflow-hidden w-full">
+  {/* Fondo de partículas */}
+  <ParticlesComponent id="tsparticles" className="absolute top-0 left-0 w-full h-full" />
 
-          <div className="flex justify-center self-center  z-10">
-            <div className="p-12 bg-white bg-opacity-30 mx-auto rounded-3xl w-96 ">
-              <div className="block sm:hidden items-center  justify-center lg:px-14 sm:max-w-4xl xl:max-w-md z-10">
-                <div className="self-center flex flex-col items-center text-gray-300">
-                  <img className="w-32 h-32" src={avicola} alt="Avicola" />
-                </div>
-              </div>
-              <div className="mb-7">
-                <h3 className="font-semibold text-2xl text-white">Avícola Don Jose</h3>
-              </div>
-              {showAlert && (
-                <Alert message={alertMessage} onClose={() => setShowAlert(false)} />
-              )}
-              <form className='space-y-6' onSubmit={handleSubmit}>
-                <TextInput
-                  text={username}
-                  setText={setUsername}
-                />
-                <PasswordInput 
-                  password={password}
-                  setPassword={setPassword}
-                  showPassword={showPassword}
-                  setShowPassword={setShowPassword}
-                />
-                  <button
-                  className='w-full flex justify-center bg-purple-800  hover:bg-purple-700 text-gray-100 p-3  rounded-lg tracking-wide font-semibold  cursor-pointer transition ease-in duration-500'
-                  type="submit">Ingresar</button>
+  {/* Contenedor del login */}
+  <div className="relative z-10 flex flex-col mt-2 mb-2 md:flex-row items-center bg-white bg-opacity-20 backdrop-blur-lg rounded-3xl shadow-lg p-10 md:p-14 space-y-6 md:space-y-0 md:space-x-8">
+    
+    {/* Imagen del logotipo */}
+    <div className="flex flex-col items-center justify-center mb-4 md:mb-0">
+      <img className="w-28 h-28 md:w-48 md:h-48 object-contain animate-pulse" src={avicola} alt="Avicola Logo" />
+    </div>
 
-              </form>
-              <div className="space-y-6">
-                
-                <div className="mt-7 text-center text-gray-300 text-xs">
-                  <span>
-                      By Dig
-                      </span>
-                </div>
-                <div className="mt-7 text-center text-gray-300 text-xs">
-                  <span>
-                    Copyright © 2024
-                    </span>
-                </div>
-              </div>
-            </div>
-          </div >
-        </div>
+    {/* Formulario de Login */}
+    <div className="w-full max-w-md p-6 bg-white bg-opacity-80 backdrop-blur-lg rounded-3xl shadow-xl">
+      <div className="text-center mb-8">
+        <h3 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">
+        DataSoft IS.
+        </h3>
       </div>
-    </>
+
+      {/* Mostrar alertas */}
+      {showAlert && (
+        <Alert message={alertMessage} onClose={() => setShowAlert(false)} />
+      )}
+
+      {/* Formulario de inicio de sesión */}
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        <TextInput
+          text={username}
+          typeInput="text"
+          placeholder="Username"
+          setText={setUsername}
+          sizeClass="md"
+        />
+        <PasswordInput
+          placeholder="Password"
+          password={password}
+          setPassword={setPassword}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+        />
+
+        <button
+          className="w-full flex justify-center bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white p-3 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105"
+          type="submit"
+        >
+          Ingresar
+        </button>
+      </form>
+
+      {/* Pie de página del login */}
+      <div className="mt-8 space-y-6 text-center text-gray-500 text-sm">
+        <p>By MicroData</p>
+        <p>&copy; 2024 DataSoft IS. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
   );
 };
 

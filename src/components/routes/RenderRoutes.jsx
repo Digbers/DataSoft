@@ -6,6 +6,8 @@ const importComponent = (path) => {
       return import('../../app/mantenimiento/usuarios');
     case 'mantenimiento/empresas/':
       return import('../../app/mantenimiento/empresas');
+    case 'mantenimiento/productos/':
+      return import('../../app/mantenimiento/productos');
     case 'ventas/nuevo/':
       return import('../../app/ventas/nuevo');
     case 'ventas/comprobantes/':
