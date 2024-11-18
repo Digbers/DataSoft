@@ -63,7 +63,7 @@ function App() {
           path="/main/*"
           element={
             isAuthenticated ? (
-              <MainPage user={user} sesionAlmacenId={sesionAlmacenId} sesionEmpId={sesionEmpId} sesionPuntoVentaId={sesionPuntoVentaId} authorities={authorities} />
+              <MainPage user={user} userCode={userCode} sesionAlmacenId={sesionAlmacenId} sesionEmpId={sesionEmpId} sesionPuntoVentaId={sesionPuntoVentaId} authorities={authorities} />
             ) : (
               <Navigate to="/login" replace />
             )

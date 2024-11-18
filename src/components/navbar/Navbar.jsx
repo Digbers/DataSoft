@@ -9,8 +9,14 @@ const Navbar = ({ menus, user, datosEmp }) => {
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navRef = useRef(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
 
-  const { logout } = useAuth();
+  const { logout, authorities } = useAuth();
+
+  const isAdmin = authorities.includes('ROLE_ADMIN');
 
   const toggleNavbar = () => {
     setIsOpen(prevState => !prevState);
@@ -71,10 +77,13 @@ const Navbar = ({ menus, user, datosEmp }) => {
         )}
       </div>
       {menu.submenus && menu.submenus.length > 0 && openSubmenus[menu.id] && (
-        <ul className={`${isCollapsed ? 'p-0' : ''}`}>
+        <ul
+          className={`${isCollapsed ? 'p-0' : ''}`} 
+        >
           {menu.submenus.map((submenu) => renderMenu(submenu))}
         </ul>
       )}
+
     </li>
   );
 
@@ -106,31 +115,71 @@ const Navbar = ({ menus, user, datosEmp }) => {
               <h3 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{datosEmp.nombreAlmacen}</h3>
               <h3 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{datosEmp.nombrePuntoVenta}</h3>
           </div>
-          {menus.map((menu) => renderMenu(menu))}
-        </ul>
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="flex items-center p-2 text-gray-800 bg-white rounded-md w-full glassmorphism-effect">
-            <i className="fas fa-user mr-2"></i>
-            <h1 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{user}</h1>
+          <div className="flex flex-col w-full items-start overflow-y-auto max-h-96">
+            {menus.map((menu) => renderMenu(menu))}
           </div>
+        </ul>
+        <div className="flex flex-col items-center justify-center space-y-0">
+          {/* Botón desplegable del usuario */}
           <button
-            type="button"
-            onClick={handleClickLogout}
-            className="flex items-center p-2 text-gray-800 bg-white rounded-md w-full glassmorphism-effect transition-all duration-300 ease-in-out"
+            onClick={toggleDropdown}
+            className="flex items-center justify-between p-2 text-gray-800 bg-white rounded-md w-full glassmorphism-effect transition-all duration-300 ease-in-out"
           >
-            <i className="fas fa-sign-out mr-2"></i>
-            {!isCollapsed && 'Cerrar Sesión'}
+            <div className="flex items-center">
+              <i className="fas fa-user mr-2"></i>
+              <h1 className={`text-sm ${isCollapsed ? 'hidden' : 'block'} text-center`}>{user}</h1>
+            </div>
+            <i className={`fas ${isDropdownOpen ? 'fa-chevron-up' : 'fa-chevron-down'} ml-2`}></i>
           </button>
+
+          {/* Menú desplegable, contiene la opción de cerrar sesión */}
+          {isDropdownOpen && (
+            <div className="flex flex-col items-center w-full mt-2 space-y-2 p-2 bg-white rounded-md shadow-md">
+              {/* Link para abrir la ventana de configuracion de menus  */}
+              {isAdmin && (
+                <>
+                  <Link
+                    to="/main/configuracion/menus/"
+                  className={`flex w-full items-center ${isCollapsed ? 'justify-center' : 'justify-center'} p-2 text-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 hover:bg-gray-200 rounded-md glassmorphism-effect transition-all duration-300 ease-in-out`}
+                  >
+                  <i className="fas fa-cog mr-2"></i>
+                    {!isCollapsed && "Permisos de Menús"}
+                  </Link>
+
+                  <Link
+                    to="/main/configuracion/usuarios/"
+                  className={`flex w-full items-center ${isCollapsed ? 'justify-center' : 'justify-center'} p-2 text-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 hover:bg-gray-200 rounded-md glassmorphism-effect transition-all duration-300 ease-in-out`}
+                  >
+                  <i className="fas fa-users mr-2"></i>
+                    {!isCollapsed && "Usuarios"}
+                  </Link>
+                </>
+              )}
+
+              {/* Botón de cerrar sesión */}
+              <button
+                type="button"
+                onClick={handleClickLogout}
+                className="flex justify-center items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white p-2 rounded-lg font-semibold transition-all duration-300 ease-in-out transform hover:scale-105"
+              >
+                {!isCollapsed && 'Cerrar Sesión'}
+                <i className="fas fa-sign-out"></i>
+              </button>
+            </div>
+          )}
+
+          {/* Botón para colapsar */}
           <button
             type="button"
-            className={`flex items-center p-2 text-gray-800 rounded-md w-full ${
+            className={`flex items-center justify-center p-2 text-gray-800 rounded-md w-full ${
               isCollapsed ? 'bg-white' : 'bg-transparent'
             } glassmorphism-effect transition-all duration-300 ease-in-out`}
             onClick={toggleCollapse}
           >
-            <i className={`fas ${isCollapsed ? 'fa-chevron-right mr-2' : 'fa-chevron-left'} mr-2`}></i>
+            <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'} mr-2`}></i>
           </button>
         </div>
+
       </nav>
     </div>
   );

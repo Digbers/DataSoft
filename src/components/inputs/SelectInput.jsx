@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 
-const SelectInput = ({ value, setValue, options, placeholder, sizeClass }) => {
+const SelectInput = ({ value, setValue, options, placeholder, sizeClass = '', disabled = false }) => {
     const [isFocused, setIsFocused] = useState(false);
 
     const handleFocus = () => setIsFocused(true);
@@ -30,6 +30,7 @@ const SelectInput = ({ value, setValue, options, placeholder, sizeClass }) => {
                 onChange={(e) => setValue(e.target.value)}
                 onFocus={handleFocus}
                 onBlur={handleBlur}
+                disabled={disabled}
             >
                 {/* Agregar una opción vacía para cuando no haya ningún valor seleccionado */}
                 <option value="" disabled hidden></option>
@@ -43,9 +44,6 @@ const SelectInput = ({ value, setValue, options, placeholder, sizeClass }) => {
         </div>
     );
 };
-SelectInput.defaultProps = {
-    sizeClass: ''
-};
 SelectInput.propTypes = {
     value: PropTypes.string.isRequired,
     setValue: PropTypes.func.isRequired,
@@ -57,6 +55,7 @@ SelectInput.propTypes = {
     ).isRequired,
     placeholder: PropTypes.string.isRequired,
     sizeClass: PropTypes.string,
+    disabled: PropTypes.bool,
 };
 
 export default SelectInput;

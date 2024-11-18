@@ -19,7 +19,6 @@ const EmpresaAlmacen = ({ user, userCode }) => {
         almacen: '',
         puntoVenta: ''
     });
-
     const handleInputChange = (value, name) => {
         setFormData((prevFormData) => ({
             ...prevFormData,
@@ -162,7 +161,7 @@ const EmpresaAlmacen = ({ user, userCode }) => {
             <SelectInput
               options={empresas}
               value={formData.empresa}
-              setValue={(value) => handleInputChange(value, 'empresa')}
+              setValue={(value) => handleEmpresaChange(value)}
               placeholder="Empresa"
               sizeClass="md"
             />
@@ -174,8 +173,8 @@ const EmpresaAlmacen = ({ user, userCode }) => {
                 transition={{ duration: 0.5 }}
               >
                 <SelectInput
-                  value={formData.almacen}
-                  setValue={(value) => handleInputChange(value, 'almacen')}
+                    value={formData.almacen}
+                    setValue={(value) => handleInputChange(value, 'almacen')}
                   options={almacenes}
                   placeholder="Almacén"
                   sizeClass="md"

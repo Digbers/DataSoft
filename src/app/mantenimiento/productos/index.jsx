@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm } from 'antd';
+import { Table, Button, Form, message, Popconfirm, Checkbox } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import * as XLSX from 'xlsx';  // Para exportar a Excel
 import jsPDF from 'jspdf';     // Para exportar a PDF
-import 'jspdf-autotable';      // AutoTable para jsPDF
-
+import 'jspdf-autotable'; 
+import ProductoModal from './ProductoModal';
+import { useAuth } from '../../../context/AuthContext';
 
 const UserTable = () => {
   const [productos, setProductos] = useState([]);
@@ -13,6 +14,55 @@ const UserTable = () => {
   const [editingProducto, setEditingProducto] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [envases, setEnvases] = useState([]);
+  const [unidades, setUnidades] = useState([]);
+  const [tipos, setTipos] = useState([]);
+  const { sesionEmpId, userCode, sesionAlmacenId} = useAuth();
+  useEffect(() => {
+    const fetchEnvases = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/inventario/envases/all/' + sesionEmpId);
+        const envases = response.data.map(envase => ({
+          value: envase.idEnvase,
+          label: envase.descripcion
+        }));
+        setEnvases(envases);
+      } catch (error) {
+        console.error('Error fetching envases:', error);
+        message.error('Error fetching envases');
+      }
+    };
+    fetchEnvases();
+    const fetchTipos = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/inventario/productosTipos/all/' + sesionEmpId);
+        const tipos = response.data.map(tipo => ({
+          value: tipo.codigo,
+          label: tipo.nombre
+        }));
+        setTipos(tipos);
+        console.log(tipos);
+      } catch (error) {
+        console.error('Error fetching tipos:', error);
+        message.error('Error fetching tipos');
+      }
+    };
+    fetchTipos();
+    const fetchUnidades = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/inventario/unidades/find-by-id-empresa/' + sesionEmpId);
+        const unidades = response.data.map(unidad => ({
+          value: unidad.codigo,
+          label: unidad.nombre
+        }));
+        setUnidades(unidades);
+      } catch (error) {
+        console.error('Error fetching unidades:', error);
+        message.error('Error fetching unidades');
+      }
+    };
+    fetchUnidades();
+  }, []);
 
   // Cargar datos desde el backend
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
@@ -52,7 +102,7 @@ const UserTable = () => {
       const { data } = await axios.get('http://localhost:8080/api/inventario/productos/list', {
         params: {
           page: 0,
-          size: 1000,  // Ajustar según el tamaño esperado de los datos
+          size: 20000,  // Ajustar según el tamaño esperado de los datos
         },
       });
       return data.content;
@@ -97,35 +147,76 @@ const UserTable = () => {
     }
   };
 
-  // Abrir modal para ver/editar
-  const handleEdit = (user) => {
-    setEditingProducto(user);
-    form.setFieldsValue(user); 
+  // Abrir el modal de edición
+  const handleEdit = (record) => {
+    const tipo = tipos.find(t => t.value === record.tipo); // Mapea el tipo al valor correcto
+    const envase = envases.find(e => e.value === record.envaseId); // Mapea el envase al valor correcto
+    setEditingProducto(record);
+    //form.setFieldsValue(record); 
+    console.log(record);
+    form.setFieldsValue({
+      ...record,  // Mantiene los valores actuales del resto de los campos
+      tipo: tipo ? tipo.value : null,  // Asigna el value del tipo encontrado
+      envase: envase ? envase.value : null,  // Asigna el value del envase encontrado
+    });
     setModalVisible(true);
   };
-
+  // Abrir el modal de agregar
+  const handleAdd = () => {
+    setEditingProducto(null);
+    form.resetFields();
+    setModalVisible(true);
+  };
   // Guardar cambios de edición
   const handleSave = async () => {
     try {
-      const values = form.getFieldsValue();
-      await axios.put(`http://localhost:8080/api/inventario/productos/update/${editingProducto.id}`, values);
-      message.success('Producto actualizado exitosamente');
+      // Validar los campos antes de guardar
+      const values = await form.validateFields();
+      //console.log(values);
+      const productoRequest = {
+        idProducto: editingProducto ? editingProducto.idProducto : null,  // Si estamos editando, usamos el id existente
+        codigo: values.codigo,
+        nombre: values.nombre,
+        tipo: { codigo: values.tipo },  // Asignar el tipo como un objeto con el value
+        empresa: {id: sesionEmpId}, 
+        stockAlmacenId: editingProducto ? editingProducto.stockAlmacenId : null,
+        almacenId: editingProducto ? editingProducto.almacenId : sesionAlmacenId,
+        envaseId: values.envase,
+        cantidadEnvase: values.cantidadEnvase,
+        cantidadProducto: values.cantidadProducto,
+        pesoTotal: values.pesoTotal,
+        fechaRegistro: null, 
+        generarStock: values.generarStock,
+        estado: values.estado,
+        precioSugerido: values.precioSugerido,
+        usuarioCreacion: userCode, 
+        usuarioActualizacion: editingProducto ? userCode : null  
+      };
+      console.log(productoRequest);
+  
+      if (editingProducto) {
+        // Si editingProducto tiene valor, es una edición
+        await axios.patch(`http://localhost:8080/api/inventario/productos/update/${editingProducto.idProducto}`, productoRequest);
+        message.success('Producto actualizado exitosamente');
+      } else {
+        // Si no hay producto, es un nuevo producto
+        await axios.post(`http://localhost:8080/api/inventario/productos/save`, productoRequest);
+        message.success('Producto creado exitosamente');
+      }
+  
       setModalVisible(false);
-      fetchData(pagination);
+      form.resetFields();
+      fetchData(pagination);  // Recargar datos de la tabla
     } catch (error) {
-      message.error('Error actualizando producto');
+      if (error.name === 'ValidationError') {
+        message.error('Por favor complete todos los campos requeridos');
+      } else {
+        message.error(editingProducto ? 'Error actualizando producto' : 'Error creando producto');
+      }
     }
   };
-
   // Columnas de la tabla
   const columns = [
-    {
-      title: 'Empresa',
-      dataIndex: ['empresa', 'razonSocial'], // Accede al campo de la razón social
-      sorter: true,
-      filterSearch: true,
-      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    },
     {
       title: 'Código',
       dataIndex: 'codigo',
@@ -142,30 +233,72 @@ const UserTable = () => {
     },
     {
       title: 'Tipo',
-      dataIndex: ['tipo', 'nombre'], // Accede al nombre del tipo
+      dataIndex: 'tipo',
       sorter: true,
       filterSearch: true,
+      render: (tipo) => {
+        // Buscar el tipo por el ID
+        const tipoProducto = tipos.find(t => t.value === tipo);
+        return tipoProducto ? tipoProducto.label : 'Sin tipo';  // Mostrar el nombre o un valor por defecto
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
-      title: 'Cantidad',
-      dataIndex: 'cantidadProducto',
+      title: 'Unidad',
+      dataIndex: 'unidad',
       sorter: true,
       filterSearch: true,
-      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    },
-    {
-      title: 'Almacén',
-      dataIndex: 'almacen',
-      sorter: true,
-      filterSearch: true,
+      render: (unidad) => {
+        // Buscar el tipo por el ID
+        const unidadProducto = unidades.find(u => u.value === unidad);
+        return unidadProducto ? unidadProducto.label : 'Sin unidad';  // Mostrar el nombre o un valor por defecto
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
       title: 'Envase',
-      dataIndex: 'envase',
+      dataIndex: 'envaseId',
       sorter: true,
       filterSearch: true,
+      render: (envaseId) => {
+        // Buscar el envase por el ID
+        const envase = envases.find(e => e.value === envaseId);
+        return envase ? envase.label : 'Sin envase';  // Mostrar el nombre o un valor por defecto
+      },
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+    },
+    {
+      title: 'Cantidad de envases',
+      dataIndex: 'cantidadEnvase',
+      sorter: true,
+      filterSearch: true,
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+    },
+    {
+      title: 'Peso',
+      dataIndex: 'pesoTotal',
+      sorter: true,
+      filterSearch: true,
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+    },
+    {
+      title: 'Generar Stock',
+      dataIndex: 'generarStock',
+      sorter: true,
+      filterSearch: true,
+      render: (generarStock) => (
+        <Checkbox checked={generarStock === 'true' || generarStock === true} disabled />
+      ),
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+    },
+    {
+      title: 'Estado',
+      dataIndex: 'estado',
+      sorter: true,
+      filterSearch: true,
+      render: (estado) => (
+        <Checkbox checked={estado === 'true' || estado === true} disabled />
+      ),
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -176,12 +309,10 @@ const UserTable = () => {
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
-      title: 'Acciones',
-      fixed: 'right',
-      key: 'actionEdit',
-      render: (text, record) => (
-        <Button onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
-      ),
+      title: 'Stock',
+      dataIndex: 'cantidadProducto',
+      sorter: true,
+      filterSearch: true,
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -189,14 +320,17 @@ const UserTable = () => {
       fixed: 'right',
       key: 'actionDelete',
       render: (text, record) => (
-        <Popconfirm
-          title="¿Estás seguro de eliminar este producto?"
-          onConfirm={() => handleDelete(record.id)}
-          okText="Sí"
-          cancelText="No"
-        >
-          <Button danger icon={<i className="fas fa-trash" />} />
-        </Popconfirm>
+        <>
+          <Button onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
+          <Popconfirm
+            title="¿Estás seguro de eliminar este producto?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Sí"
+            cancelText="No"
+          >
+            <Button danger icon={<i className="fas fa-trash" />} />
+            </Popconfirm>
+        </>
       ),
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
@@ -204,52 +338,58 @@ const UserTable = () => {
   
 
   return (
-    <div className='p-6 bg-gray-100 overflow-auto h-full relative'>
-      <div className="mb-2">
+    <div className="rounded-lg dark:bg-transparent bg-transparent border shadow-md p-0 z-10 h-full relative">
+  
+      {/* Título y botón "Nuevo" */}
+      <div className="mb-2 flex justify-between border rounded-lg dark:bg-gray-800 bg-white text-gray-500 dark:text-gray-300 p-2">
         <h3 className="text-2xl font-bold">Productos</h3>
+        <div className="flex flex-row justify-end">
+          <Button onClick={exportToExcel} icon={<i className="fas fa-file-excel" />} className="mr-2">
+            Exportar a Excel
+          </Button>
+          <Button onClick={exportToPDF} icon={<i className="fas fa-file-pdf" />} className="mr-2">
+            Exportar a PDF
+          </Button>
+          <Button type="primary" icon={<i className="fas fa-plus" />} onClick={() => handleAdd()}>
+            Nuevo
+          </Button>
+        </div>
       </div>
-      {/* Botones de exportación */}
-      <div className="mb-2 flex flex-row justify-end">
-        <Button onClick={exportToExcel} icon={<i className="fas fa-file-excel" />} className="mr-2">
-          Exportar a Excel
-        </Button>
-        <Button onClick={exportToPDF} icon={<i className="fas fa-file-pdf" />} className="mr-2">
-          Exportar a PDF
-        </Button>
-      </div>
-      {/* Tabla de Ant Design */}
-      <Table
-        columns={columns}
-        dataSource={productos}
-        pagination={pagination}
-        loading={loading}
-        rowKey="id"
-        scroll={{
-          x: 'max-content',
-        }}
-        className='w-full text-sm text-left rtl:text-right text-gray-600 dark:text-gray-400'
-        onChange={(pagination, filters, sorter) => fetchData(pagination, filters, sorter)}
-      />
+  
+      {/* Contenedor de la tabla con overflow */}
+    
+        <Table
+          columns={columns}
+          dataSource={productos}
+          pagination={pagination}
+          loading={loading}
+          rowKey="id"
+          scroll={{
+            x: 'max-content',
+            y: 400,
+          }}
+          className="w-full text-sm text-left rtl:text-right text-gray-600 dark:text-gray-400"
+          onChange={(pagination, filters, sorter) => fetchData(pagination, filters, sorter)}
+          sticky // Hace que los encabezados de la tabla se mantengan fijos
+        />
 
-      {/* Modal para ver/editar usuarios */}
-      <Modal
-        title="Editar Producto"
-        open={modalVisible}  // Cambiar 'visible' por 'open'
-        onCancel={() => setModalVisible(false)}
-        onOk={handleSave}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="username" label="Username" rules={[{ required: true, message: 'Please enter username' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="isEnabled" label="Enabled" valuePropName="checked">
-            <Input type="checkbox" />
-          </Form.Item>
-          {/* Agregar otros campos del usuario aquí */}
-        </Form>
-      </Modal>
+  
+      {/* Renderizar ProductoModal solo cuando envases y tipos están cargados */}
+      {envases.length > 0 && tipos.length > 0 && (
+        <ProductoModal
+          visible={modalVisible}
+          onCancel={() => setModalVisible(false)}
+          onOk={handleSave}
+          form={form}
+          producto={editingProducto}
+          envases={envases}
+          tipos={tipos}
+          unidades={unidades}
+        />
+      )}
     </div>
   );
+  
 };
 
 export default UserTable;

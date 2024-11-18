@@ -2,7 +2,7 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 
-const TextAreaInput = ({ text, setText, placeholder, typeInput }) => {
+const TextAreaInput = ({ text, setText, placeholder, typeInput, disabled = false }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   const handleFocus = () => setIsFocused(true);
@@ -30,10 +30,12 @@ const TextAreaInput = ({ text, setText, placeholder, typeInput }) => {
         className="w-full h-8 text-sm px-2 py-1 bg-white dark:bg-gray-600 border-gray-300 rounded-md shadow-sm focus:outline-none border-2 focus:border-purple-400"
         type={typeInput}
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => setText(e)}  // Pasa el evento completo
         onFocus={handleFocus}
         onBlur={handleBlur}
+        disabled={disabled}
       />
+
     </div>
   );
 }
@@ -43,6 +45,7 @@ TextAreaInput.propTypes = {
   setText: PropTypes.func.isRequired,
   placeholder: PropTypes.string.isRequired,
   typeInput: PropTypes.string.isRequired,
+  disabled: PropTypes.bool,
 }
 
 export default TextAreaInput;

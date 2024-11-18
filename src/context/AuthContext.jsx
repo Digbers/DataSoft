@@ -14,6 +14,34 @@ export function AuthProvider({ children }) {
   const [sesionAlmacenId, setSesionAlmacenId] = useState(null);
   const [sesionPuntoVentaId, setSesionPuntoVentaId] = useState(null);
 
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setUser(null);
+    setUserCode(null);
+    setAuthorities(null);
+    setSesionEmpId(null);
+    setSesionAlmacenId(null);
+    setSesionPuntoVentaId(null);
+    delete axios.defaults.headers.common['Authorization'];
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const decodedToken = jwtDecode(token);
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (currentTime > decodedToken.exp) {
+          logout();
+          window.location.href = '/login'; // Redirige al login si el token ha expirado
+        }
+      }
+    }, 300000); // Verifica cada 5 minutos (300000ms)
+  
+    return () => clearInterval(interval); // Limpia el intervalo cuando el componente se desmonta
+  }, [logout]); // Ahora 'logout' está memoizado y no genera advertencias
+
   const fetchDataCallback = useCallback(() => {
     const token = localStorage.getItem('token');
     console.log(token);
@@ -63,7 +91,7 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
     setUser(decodedToken.sub);
     setUserCode(decodedToken.usercodigo);
-    setAuthorities(decodedToken.authorities);
+    setAuthorities(decodedToken.authorities.split(','));
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
   const loginComplete = (token) => {
@@ -72,24 +100,13 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
     setUser(decodedToken.sub);
     setUserCode(decodedToken.usercodigo);
-    setAuthorities(decodedToken.authorities);
+    setAuthorities(decodedToken.authorities.split(','));
     setSesionEmpId(decodedToken.sesionEmpId);
     setSesionAlmacenId(decodedToken.sesionAlmacenId);
     setSesionPuntoVentaId(decodedToken.sesionPuntoVentaId);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
-    setUser(null);
-    setUserCode(null);
-    setAuthorities(null);
-    setSesionEmpId(null);
-    setSesionAlmacenId(null);
-    setSesionPuntoVentaId(null);
-    delete axios.defaults.headers.common['Authorization'];
-  };
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout, user, authorities, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId, loginComplete, userCode }}>

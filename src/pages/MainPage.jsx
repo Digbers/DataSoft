@@ -9,7 +9,10 @@ import ParticlesComponent from "../components/Particles";
 import renderRoutes from '../components/routes/RenderRoutes'; 
 import Dashboard from "../pages/Dashboard";
 import Swal from 'sweetalert2'
-const MainPage = ({ user, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId }) => {
+import ConfiguracionMenus from "../app/configuracion/menus";
+import ConfiguracionUsuarios from "../app/configuracion/usuarios";
+
+const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId }) => {
   const [menus, setMenus] = useState([]);
   const [datosEmp, setDatosEmp] = useState({
     nombreEmpresa: '',
@@ -18,7 +21,7 @@ const MainPage = ({ user, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId }) =>
   });
   
   useEffect(() => {
-    getMenusByUserName(user)
+    getMenusByUserName(userCode)
       .then(response => {
         setMenus(response.data);
       })
@@ -30,7 +33,7 @@ const MainPage = ({ user, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId }) =>
           text: 'Error al cargar los menús'
         });
       });
-  }, [user]);
+  }, [userCode]);
   
   useEffect(() => {
     getDatosEmpresa(sesionEmpId, sesionAlmacenId, sesionPuntoVentaId)
@@ -63,17 +66,19 @@ const MainPage = ({ user, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId }) =>
 
   {/* Contenedor principal con efecto de glassmorphism */}
   <div className="relative flex-1 p-2 bg-white bg-opacity-20 backdrop-blur-lg dark:bg-gray-900 dark:bg-opacity-20 overflow-hidden w-full h-full rounded shadow-xl dark:text-gray-200">
-    <div className="flex justify-end border-green-500 dark:border-gray-500 rounded-lg p-2">
+    <div className="flex justify-end bg-white dark:bg-gray-900 rounded-md  p-2">
       <p className="mt-4 text-lg text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">
-        Bienvenido, {user}
+        Bienvenido, {user} a {datosEmp.nombreEmpresa}.
       </p>
       <ThemeToggleButton />
     </div>
 
     {/* Contenedor de rutas */}
-    <div className="h-[calc(100%-4rem)] rounded bg-white bg-opacity-20 backdrop-blur-lg shadow-inner dark:bg-gray-800 dark:bg-opacity-20">
+    <div className="h-[calc(100%-4rem)] rounded bg-white bg-opacity-20 backdrop-blur-lg shadow-inner dark:bg-gray-800 dark:bg-opacity-20 flex flex-col">
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/configuracion/menus/" element={<ConfiguracionMenus />} />
+        <Route path="/configuracion/usuarios/" element={<ConfiguracionUsuarios />} />
         {renderRoutes(menus)}
       </Routes>
     </div>
@@ -83,6 +88,7 @@ const MainPage = ({ user, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId }) =>
   );
 };
 MainPage.propTypes = {
+  userCode: PropTyes.string.isRequired,
   user: PropTyes.string.isRequired,
   authorities: PropTyes.string.isRequired,
   sesionEmpId: PropTyes.number.isRequired,

@@ -109,7 +109,7 @@ import ParticlesComponent from '../../components/Particles';
       </form>
 
       {/* Pie de página del login */}
-      <div className="mt-8 space-y-6 text-center text-gray-500 text-sm">
+      <div className="mt-4 space-y-6 text-center text-gray-500 text-sm">
         <p>By MicroData</p>
         <p>&copy; 2024 DataSoft IS. Todos los derechos reservados.</p>
       </div>
