@@ -12,7 +12,7 @@ const TablaTiposEntidades = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const { sesionEmpId, userCode } = useAuth();
   const [form] = Form.useForm();
-  
+
   
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
@@ -74,7 +74,7 @@ const TablaTiposEntidades = () => {
         id: editingTipoEntidad ? editingTipoEntidad.id : null,
         tipoCodigo: values.tipoCodigo,
         descripcion: values.descripcion,
-        idEmpresa: sesionEmpId,
+        empresa: sesionEmpId,
         usuarioCreacion: userCode,
         usuarioActualizacion: editingTipoEntidad ? userCode : null
       };

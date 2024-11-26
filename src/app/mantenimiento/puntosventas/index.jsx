@@ -11,8 +11,8 @@ const TablaPuntosVentas = () => {
   const [editingPuntoVenta, setEditingPuntoVenta] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const { sesionEmpId, userCode } = useAuth();
+  const [almacenes, setAlmacenes] = useState([]);
   const [form] = Form.useForm();
-  
   
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
@@ -42,6 +42,18 @@ const TablaPuntosVentas = () => {
   useEffect(() => {
     fetchData(pagination);
   }, [pagination.current, pagination.pageSize]); // Dependencias específicas para evitar llamadas duplicadas
+  
+  useEffect(() => {
+    const fetchAlmacenes = async () => {
+      const response = await axios.get(`http://localhost:8080/api/inventario/almacenes/findByEmpresa/${sesionEmpId}`);
+      const almacenes = response.data.map(almacen => ({
+        value: almacen.id,
+        label: almacen.nombre
+      }));
+      setAlmacenes(almacenes);
+    };
+    fetchAlmacenes();
+  }, []);
   
   // Eliminar punto de venta
   const handleDelete = async (id) => {
@@ -76,6 +88,7 @@ const TablaPuntosVentas = () => {
         nombre: values.nombre,
         direccion: values.direccion,
         idEmpresa: sesionEmpId,
+        almacen: values.almacen,
         usuarioCreacion: userCode,
         usuarioActualizacion: editingPuntoVenta ? userCode : null
       };
@@ -261,13 +274,16 @@ const TablaPuntosVentas = () => {
         sticky
       />
       {/* Modal para Punto de venta */}
-      <ModalPuntoVenta
-        visible={modalVisible}
-        form={form}
-        onClose={() => setModalVisible(false)}
-        onSave={handleSave}
-        puntoVenta={editingPuntoVenta}
-      />
+      {almacenes.length > 0 && (
+        <ModalPuntoVenta
+          visible={modalVisible}
+          form={form}
+          onClose={() => setModalVisible(false)}
+          onSave={handleSave}
+          puntoVenta={editingPuntoVenta}
+          almacenes={almacenes}
+        />
+      )}
     </div>
   );
   

@@ -44,6 +44,14 @@ const importComponent = (path) => {
       return import('../../app/caja/cuentasxcobrar');
     case 'caja/cuentasxpagar/':
       return import('../../app/caja/cuentasxpagar');
+    case 'asistencias/nueva/':
+      return import('../../app/asistencias/nueva');
+    case 'mantenimiento/trabajadores/':
+      return import('../../app/mantenimiento/trabajadores');
+    case 'caja/ingresargastos/':
+      return import('../../app/caja/ingresargastos');
+    case 'almacenes/movimientos/':
+      return import('../../app/almacenes/movimientos');
     default:
       return import('../../pages/NotFoundPage'); 
   }

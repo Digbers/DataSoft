@@ -1,11 +1,10 @@
 import Swal from "sweetalert2"; // Importar SweetAlert2
 import axios from "../../../config/axiosConfig";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { debounce } from "lodash";
 
 // Custom hook para manejar la lógica de compras
-const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, setTipoDocumentos, setEstados, setStockPollo }) => {
-  const [stockPolloEventSource, setStockPolloEventSource] = useState(null);
+const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, setTipoDocumentos, setEstados }) => {
 
   const buildResponseCompra = (formData, details, proveedor, selectedMoneda) => {
 
@@ -198,31 +197,6 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
 
 
 
-  const handleStockPollo = (codigoProducto) => {
-    if (stockPolloEventSource) {
-      stockPolloEventSource.close();
-    }
-    const newStockPolloEventSource = new EventSource(`http://localhost:8080/api/product-free-pass/stream-stock-product-venta/${codigoProducto}`);
-    newStockPolloEventSource.onmessage = (event) => {
-      setStockPollo(event.data);
-    };
-    newStockPolloEventSource.onerror = (error) => {
-      console.error("Error en la conexión SSE para el stock de pollo", error);
-      newStockPolloEventSource.close();
-    };
-    setStockPolloEventSource(newStockPolloEventSource);
-  };
-
-  // Cleanup de EventSources cuando el componente es desmontado
-  useEffect(() => {
-    return () => {
-      if (stockPolloEventSource) {
-        stockPolloEventSource.close();
-      }
-    };
-  }, [stockPolloEventSource]);
-
-
     // Función para obtener productos en base a la descripción
     const fetchProducts = async (descripcion) => {
       try {
@@ -250,7 +224,6 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
       fetchTipoDocumentos,
       fetchComprasEstados,
       buildResponseCompra,
-      handleStockPollo,
     };
   };
 

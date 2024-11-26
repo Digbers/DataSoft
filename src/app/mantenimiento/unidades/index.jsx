@@ -13,6 +13,7 @@ const TablaUnidades = () => {
   const { sesionEmpId, userCode } = useAuth();
   const [form] = Form.useForm();
   
+
   
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
@@ -72,7 +73,7 @@ const TablaUnidades = () => {
   const handleSave = async (values) => {
     try {
       const unidadRequest = {
-        id: editingUnidad ? editingUnidad.id : null,
+        idUnidad: editingUnidad ? editingUnidad.idUnidad : null,
         codigo: values.codigo,
         nombre: values.nombre,
         simbolo: values.simbolo,
@@ -82,7 +83,7 @@ const TablaUnidades = () => {
       };
       
       if (editingUnidad) {
-        await axios.patch(`http://localhost:8080/api/inventario/unidades/update/${editingUnidad.id}`, unidadRequest);
+        await axios.patch(`http://localhost:8080/api/inventario/unidades/update/${editingUnidad.idUnidad}`, unidadRequest);
         message.success('Unidad actualizada exitosamente');
       } else {
         await axios.post(`http://localhost:8080/api/inventario/unidades/save`, unidadRequest);

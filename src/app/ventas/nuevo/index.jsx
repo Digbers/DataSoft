@@ -39,8 +39,10 @@ const VentasFast = () => {
   const [cliente, setCliente] = useState({
     id: 0,
     documento: "",
+    numeroDocumento: "",
     nombre: "",
-    tipoDocumento: "",
+    estado: "",
+    condicion: "",
     direccion: "",
   });
   const [formData, setFormData] = useState({
@@ -143,6 +145,14 @@ useEffect(() => {
   const handleSave = async () => {
     try {
       // Puedes agregar más validaciones si es necesario antes de guardar
+      if(cliente.id === 0){
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se ha seleccionado ningún cliente.",
+        });
+        return;
+      }
       const requestDTO = buildResponseVenta(formData,details,cliente,selectedMoneda,selectedsPaymentMethod, numero);
       const ventaGuardadaId = await fetchGuardarVenta(requestDTO);
       if (ventaGuardadaId) {
@@ -236,7 +246,7 @@ useEffect(() => {
       nombre: product.nombre,
       unidad: product.unidad, // Estableces manualmente lo que necesites
       cantidad: 1, // Cantidad inicial
-      precioUnitario: product.precio, // Puedes dejarlo en 0 o calcularlo según sea necesario
+      precioUnitario: product.precioVenta, // Puedes dejarlo en 0 o calcularlo según sea necesario
       descuento: 0, // Descuento inicial
       totalProducto: total,
     });
@@ -287,6 +297,7 @@ useEffect(() => {
       return;
     }
     setDescripcionProducto("");
+    setCodigoProducto("");
     setDetails((prev) => [...prev, selectedProduct]);
     setSelectedProduct({
       id: 0, 
@@ -356,8 +367,10 @@ useEffect(() => {
         setCliente({
           id: 0,
           documento: "",
+          numeroDocumento: "",
           nombre: "",
-          tipoDocumento: "",
+          estado: "",
+          condicion: "",
           direccion: "",
         });
         Swal.fire({
@@ -380,7 +393,7 @@ useEffect(() => {
     // Maneja la presión de teclas para el input del documento
     const handleKeyDown = (e) => {
       if (e.key === "Enter") {
-        handleClienteChange(cliente.documento);
+        handleClienteChange(cliente.numeroDocumento);
       }
     };
     const resetForm = () => {
@@ -388,23 +401,24 @@ useEffect(() => {
       setSelectedProduct(null);
       setDescripcionProducto("");
       setCodigoProducto("");
-      setNumero("");
+      //setNumero("");
       setDetails([]);
-      setSelectedMoneda(null);
+      //setSelectedMoneda(null);
       setSelectedsPaymentMethod([]);
-      setSelectedTipoDocumento(null);
+      //setSelectedTipoDocumento(null);
       setStockPollo(0);
       setCodigoProductoVenta("POLLOSAC");
       setCliente({
         id: 0,
         documento: "",
+        numeroDocumento: "",
         nombre: "",
-        tipoDocumento: "",
+        estado: "",
+        condicion: "",
         direccion: "",
       });
-      setFormData({
-        comprobante: "",
-        serie: "",
+      setFormData((prevFormData) => ({
+        ...prevFormData,
         fecha: new Date().toISOString().split('T')[0], // Fecha actual
         tipoCambio: 1,
         subtotal: 0,
@@ -418,7 +432,7 @@ useEffect(() => {
         empresa: sesionEmpId,
         puntoVenta: sesionPuntoVentaId,
         usuarioCreacion: userCode,
-      });
+      }));
     };
   
 
@@ -551,7 +565,7 @@ useEffect(() => {
             <tbody>
               {selectedProduct && (
                 <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                  <td className="px-2 py-2 border-b">
+                  <td className="px-1 py-2 border-b">
                     <input
                       type="text"
                       name="unidad"
@@ -561,7 +575,7 @@ useEffect(() => {
                       disabled
                     />
                   </td>
-                  <td className="px-2 py-2 border-b">
+                  <td className="px-1 py-2 border-b">
                     <input
                       type="number"
                       name="cantidad Pollo"
@@ -571,7 +585,7 @@ useEffect(() => {
                       disabled
                     />
                   </td>
-                  <td className="px-2 py-2 border-b">
+                  <td className="px-1 py-2 border-b">
                     <input
                       type="number"
                       name="cantidad"
@@ -581,7 +595,7 @@ useEffect(() => {
                     />
                   </td>
 
-                  <td className="px-2 py-2 border-b">
+                  <td className="px-1 py-2 border-b">
                     <input
                       type="number"
                       name="peso"
@@ -590,7 +604,7 @@ useEffect(() => {
                       className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                     />
                   </td>
-                  <td className="px-2 py-2 border-b">
+                  <td className="px-1 py-2 border-b">
                     <input
                       type="number"
                       name="precioUnitario"
@@ -599,7 +613,7 @@ useEffect(() => {
                       className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                     />
                   </td>
-                  <td className="px-2 py-2 border-b">
+                  <td className="px-1 py-2 border-b">
                     <input
                       type="number"
                       name="descuento"
@@ -608,7 +622,7 @@ useEffect(() => {
                       className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                     />
                   </td>
-                  <td className="px-2 py-2 border-b">
+                  <td className="px-1 py-2 border-b">
                     <input
                       type="number"
                       name="totalProducto"
@@ -748,9 +762,9 @@ useEffect(() => {
             <div className="flex-grow"> {/* El TextInput ocupa 3/4 del espacio */}
               <TextInput
                 name="documento" // Add name attribute
-                text={cliente.documento}
-                setText={(value) => handleInputChangeCliente(value, "documento")}
-                placeholder="N° Documento"
+                text={cliente.numeroDocumento}
+                setText={(value) => handleInputChangeCliente(value, "numeroDocumento")}
+                placeholder="N° Doc"
                 typeInput="text"
                 onKeyDown={handleKeyDown} // Add onKeyDown handler
               />
@@ -770,6 +784,7 @@ useEffect(() => {
                 tipoDocumento={tipoDocumentos}
                 setEntidad={setCliente}
                 sesionEmpId={sesionEmpId}
+                setSelectedTipoDocumento={setSelectedTipoDocumento}
               />
             )}
           </div>

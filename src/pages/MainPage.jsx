@@ -19,6 +19,7 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
     nombreAlmacen: '',
     nombrePuntoVenta: ''
   });
+  const [navbarKey, setNavbarKey] = useState(0);
   
   useEffect(() => {
     getMenusByUserName(userCode)
@@ -33,7 +34,7 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
           text: 'Error al cargar los menús'
         });
       });
-  }, [userCode]);
+  }, [userCode, navbarKey]);
   
   useEffect(() => {
     getDatosEmpresa(sesionEmpId, sesionAlmacenId, sesionPuntoVentaId)
@@ -54,6 +55,12 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
         });
       });
   }, [sesionEmpId, sesionAlmacenId, sesionPuntoVentaId]); // Add dependencies if they are dynamic
+
+  
+
+  const refreshNavbar = () => {
+    setNavbarKey((prevKey) => prevKey + 1);
+  };
   
 
   return (
@@ -62,7 +69,7 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
   <ParticlesComponent id="tsparticles" className="absolute top-0 left-0 w-full h-full" />
 
   {/* Barra de navegación */}
-  <Navbar menus={menus} user={user} datosEmp={datosEmp} />
+  <Navbar key={navbarKey} menus={menus} user={user} datosEmp={datosEmp} />
 
   {/* Contenedor principal con efecto de glassmorphism */}
   <div className="relative flex-1 p-2 bg-white bg-opacity-20 backdrop-blur-lg dark:bg-gray-900 dark:bg-opacity-20 overflow-hidden w-full h-full rounded shadow-xl dark:text-gray-200">
@@ -77,7 +84,7 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
     <div className="h-[calc(100%-4rem)] rounded bg-white bg-opacity-20 backdrop-blur-lg shadow-inner dark:bg-gray-800 dark:bg-opacity-20 flex flex-col">
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/configuracion/menus/" element={<ConfiguracionMenus />} />
+        <Route path="/configuracion/menus/" element={<ConfiguracionMenus onPermisosGuardados={refreshNavbar} />} />
         <Route path="/configuracion/usuarios/" element={<ConfiguracionUsuarios />} />
         {renderRoutes(menus)}
       </Routes>

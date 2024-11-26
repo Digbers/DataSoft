@@ -3,17 +3,17 @@ import { Modal, Form, Input } from 'antd';
 import PropTypes from 'prop-types';
 import Swal from 'sweetalert2';
 
-const ModalTiposProductos = ({ visible, form, onClose, onSave, tipoProducto }) => {
+const ModalTrabajadores = ({ visible, form, onClose, onSave, trabajador }) => {
 
   // Cargar los valores de la moneda en el formulario si estamos editando
   useEffect(() => {
-    if (tipoProducto) {
-      console.log(tipoProducto);
-      form.setFieldsValue(tipoProducto);
+    if (trabajador) {
+      console.log(trabajador);
+      form.setFieldsValue(trabajador);
     } else {
       form.resetFields();
     }
-  }, [tipoProducto, form]);
+  }, [trabajador, form]);
   
   const handleSubmit = async () => {
     try {
@@ -36,7 +36,7 @@ const ModalTiposProductos = ({ visible, form, onClose, onSave, tipoProducto }) =
 
   return (
     <Modal
-      title={tipoProducto ? 'Editar Tipo de Producto' : 'Nuevo Tipo de Producto'}
+      title={trabajador ? 'Editar Trabajador' : 'Nuevo Trabajador'}
       open={visible}
       onCancel={onClose}
       onOk={handleSubmit}
@@ -70,17 +70,30 @@ const ModalTiposProductos = ({ visible, form, onClose, onSave, tipoProducto }) =
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
           />
         </Form.Item>
+        <Form.Item
+          name="simbolo"
+          label="Símbolo"
+          rules={[
+            { required: true, message: 'Por favor ingrese el símbolo' },
+            { max: 3, message: 'El símbolo debe tener máximo 3 caracteres' }
+          ]}
+        >
+          <Input
+            maxLength={3}
+            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+          />
+        </Form.Item>
       </Form>
     </Modal>
   );
 };
 
-ModalTiposProductos.propTypes = {
+ModalTrabajadores.propTypes = {
   visible: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   form: PropTypes.object.isRequired,
-  tipoProducto: PropTypes.object,
+  trabajador: PropTypes.object,
 };
 
-export default ModalTiposProductos;
+export default ModalTrabajadores;

@@ -18,8 +18,8 @@ const ProductoModal = ({ visible, onCancel, onOk, form, producto, envases, tipos
           tipo: tipos[0]?.value,  // Selecciona el primer tipo por defecto
           envase: envases[0]?.value,  // Selecciona el primer envase por defecto
           unidad: unidades[0]?.value,  // Selecciona la primera unidad por defecto
-          generarStock: false,
-          estado: false
+          generarStock: true,
+          estado: true
         }}
       >
         <Row gutter={16}>
@@ -28,9 +28,14 @@ const ProductoModal = ({ visible, onCancel, onOk, form, producto, envases, tipos
             <Form.Item
               name="codigo"
               label="Código"
-              rules={[{ required: true, message: 'Por favor ingrese el código' }]}
+              rules={[{ required: true, message: 'Por favor ingrese el código' },
+                { max: 20, message: 'El código debe tener máximo 50 caracteres' }
+              ]}
             >
-              <Input />
+              <Input
+                maxLength={20}
+                onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+              />
             </Form.Item>
           </Col>
 
@@ -39,9 +44,14 @@ const ProductoModal = ({ visible, onCancel, onOk, form, producto, envases, tipos
             <Form.Item
               name="nombre"
               label="Nombre"
-              rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
+              rules={[{ required: true, message: 'Por favor ingrese el nombre' },
+                {max: 150, message: 'El nombre debe tener máximo 150 caracteres'}
+              ]}
             >
-              <Input />
+              <Input
+                maxLength={150}
+                onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+              />
             </Form.Item>
           </Col>
         </Row>
@@ -100,27 +110,6 @@ const ProductoModal = ({ visible, onCancel, onOk, form, producto, envases, tipos
             </Form.Item>
           </Col>
 
-          {/* Campo Peso Total */}
-          <Col span={12}>
-            <Form.Item
-              name="pesoTotal"
-              label="Peso total"
-              rules={[{ required: true, message: 'Por favor ingrese el peso total' }]}
-            >
-              <InputNumber 
-                min={0} 
-                style={{ width: '100%' }} 
-                onKeyPress={(e) => {
-                  if (!/^\d+$/.test(e.key)) {
-                    e.preventDefault();
-                  }
-                }}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
           {/* Checkboxes Generar Stock y Estado */}
           <Col span={12}>
             <Form.Item>
@@ -141,12 +130,34 @@ const ProductoModal = ({ visible, onCancel, onOk, form, producto, envases, tipos
               </div>
             </Form.Item>
           </Col>
+        
+        </Row>
 
+        <Row gutter={16}>
+          
           {/* Campo Precio Unitario */}
           <Col span={12}>
             <Form.Item
-              name="precioSugerido"
-              label="Precio Unitario"
+              name="precioVenta"
+              label="Precio Venta"
+              rules={[{ required: true, message: 'Por favor ingrese el precio unitario' }]}
+            >
+              <InputNumber 
+                min={0} 
+                style={{ width: '100%' }} 
+                onKeyPress={(e) => {
+                  if (!/^\d+$/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
+              />
+            </Form.Item>
+          </Col>
+          {/* Campo Precio Unitario */}
+          <Col span={12}>
+            <Form.Item
+              name="precioCompra"
+              label="Precio Compra"
               rules={[{ required: true, message: 'Por favor ingrese el precio unitario' }]}
             >
               <InputNumber 

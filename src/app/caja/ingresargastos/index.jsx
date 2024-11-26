@@ -5,26 +5,23 @@ import TextAreaInput from "../../../components/inputs/TextAreaInput";
 //import { motion } from "framer-motion";
 import Swal from "sweetalert2";
 import { useAuth } from "../../../context/AuthContext";
-import useCompras  from "./useCompras";
+import useGastos  from "./useGastos";
 import CustomButton from "../../../components/inputs/CustomButton";
 import ClipLoader from 'react-spinners/ClipLoader';
 
-const CompraNuevo = () => {
+const IngresarGastos = () => {
   //loader
   const [loading, setLoading] = useState(false);
   const { userCode, sesionEmpId, sesionPuntoVentaId, sesionAlmacenId } = useAuth();
   const [products, setProducts] = useState([]);
   const [descripcionProducto, setDescripcionProducto] = useState("");
-  const [codigoProducto, setCodigoProducto] = useState("");
   const [monedas, setMonedas] = useState([]);
   const [estados, setEstados] = useState([]);
   const [comprobantes, setComprobantes] = useState([]);
   const [details, setDetails] = useState([]);
-  const [selectedMoneda, setSelectedMoneda] = useState({});
+  const [selectedMoneda, setSelectedMoneda] = useState("");
   const [tipoDocumentos, setTipoDocumentos] = useState([]);
   const [selectedTipoDocumento, setSelectedTipoDocumento] = useState({});
-  const [stockPollo, setStockPollo] = useState(0);
-  const [codigoProductoVenta, setCodigoProductoVenta] = useState("POLLOSAC");
   const [proveedor, setProveedor] = useState({
     id: 0,
     documento: "",
@@ -35,13 +32,10 @@ const CompraNuevo = () => {
     direccion: "",
   });
   const [selectedProduct, setSelectedProduct] = useState({
-    id: 0, 
-    idEnvase: 0,
-    cantidadPollo: 0,
-    capacidadEnvase: 0,
+    id: 0,
+    idEnvase: 0, 
     codigo: "",
     descripcionA: "",
-    peso: 0,
     nombre: "",
     unidad: "", // Estableces manualmente lo que necesites
     cantidad: 1, // Cantidad inicial
@@ -71,22 +65,24 @@ const CompraNuevo = () => {
     puntoVenta: sesionPuntoVentaId,
     usuarioCreacion: userCode,
   });
+  const [tooltips, setTooltips] = useState({
+    serie: false,
+    numero: false,
+  });
 
   useEffect(() => {
     if (userCode) {
-      //setVendedor([{ value: userCode, label: userCode }]);
       setFormData((prev) => ({ ...prev, vendedor: userCode }));
     }
   }, [userCode, sesionEmpId, sesionPuntoVentaId]);
 
-  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, handleStockPollo, buildResponseCompra, fetchGuardarCompra } = useCompras({
+  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, buildResponseCompra, fetchGuardarCompra } = useGastos({
     setComprobantes,
     setProducts,
     setMonedas,
     setProveedor,
     setTipoDocumentos,
-    setEstados,
-    setStockPollo
+    setEstados
   });
   // Optimiza el useEffect
 useEffect(() => {
@@ -136,7 +132,6 @@ useEffect(() => {
       periodoRegistro: formattedMonth, // Set only the year and month
       fechaVencimiento: formattedDate
     }));
-    handleStockPollo(codigoProductoVenta);
   }, []);
 
 
@@ -147,6 +142,7 @@ useEffect(() => {
   const handleSave = async () => {
     try {
       if (!validateFields()) {
+        console.log("no paso");
         return; // Detener la ejecución si falta algún campo
       } 
       // Puedes agregar más validaciones si es necesario antes de guardar
@@ -175,6 +171,7 @@ useEffect(() => {
       ...prevFormData,
       [name]: value,
     }));
+    setTooltips((prev) => ({ ...prev, [name]: false }));
   };
   const handleCheckboxChange = (checked) => {
     setFormData((prevFormData) => ({
@@ -197,14 +194,10 @@ useEffect(() => {
   const handleProductSelect = (product) => {
     console.log(product);
     setDescripcionProducto(product.descripcionA);
-    setCodigoProducto(product.codigo);
-    let total = product.precioCompra * product.peso;
-    let cantidadPollo  = 1 * product.capacidadEnvase; // cantidad detalle * capacidad Envase
+    let total = product.precioCompra * 1;
     setSelectedProduct({
       id: product.id, 
       idEnvase: product.envaseId,
-      cantidadPollo: cantidadPollo,
-      capacidadEnvase: product.capacidadEnvase,
       codigo: product.codigo,//sera reemplazado por el codigo del pollo stock
       descripcionA: product.descripcionA,
       peso: product.peso,
@@ -212,7 +205,6 @@ useEffect(() => {
       unidad: product.unidad, // Estableces manualmente lo que necesites
       cantidad: 1, // Cantidad inicial
       precioUnitario: product.precioCompra, // Puedes dejarlo en 0 o calcularlo según sea necesario
-      descuento: 0, // Descuento inicial
       totalProducto: total,
     });
 
@@ -238,17 +230,13 @@ useEffect(() => {
 };
   //agregar detalle
   const handleAddDetail = () => {
-  
     setDescripcionProducto("");
     setDetails((prev) => [...prev, selectedProduct]);
     setSelectedProduct({
       id: 0, 
       idEnvase: 0,
-      cantidadPollo: 0,
-      capacidadEnvase: 0,
       codigo: "",
       descripcionA: "",
-      peso: 0,
       nombre: "",
       unidad: "", // Estableces manualmente lo que necesites
       cantidad: 1, // Cantidad inicial
@@ -258,33 +246,13 @@ useEffect(() => {
     });
   };
   const handleDetailChange = (value, name) => {
-    let detailCantidadPollo = 0;
-    if(details.length > 0){
-      detailCantidadPollo = details.reduce((sum, detail) => sum + detail.cantidadPollo, 0);
-    }
-    let stock = stockPollo - detailCantidadPollo;
-    if(name === "cantidad"){
-      if(value > stock){
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "La cantidad no puede ser mayor al stock de pollos.",
-        }).then(() => {
-          document.getElementsByName("cantidad")[0].focus(); // Enfoca el input cantidad
-        });
-        return;
-      }
-    }
     // Actualizamos el campo que cambió
     setSelectedProduct((prev) => {
       
       const updatedProduct = { ...prev, [name]: value };
-      if(name === "cantidad"){
-        updatedProduct.cantidadPollo = updatedProduct.cantidad * updatedProduct.capacidadEnvase;
-      }
       // Si el campo cambiado es 'cantidad', 'precioUnitario' o 'descuento', recalculamos el total
-      if (name === "peso" || name === "precioUnitario" || name === "descuento") {
-        const total = (parseFloat(updatedProduct.peso) || 0) * (parseFloat(updatedProduct.precioUnitario) || 0) - (parseFloat(updatedProduct.descuento) || 0);
+      if (name === "cantidad" || name === "precioUnitario" || name === "descuento") {
+        const total = (parseFloat(updatedProduct.cantidad) || 0) * (parseFloat(updatedProduct.precioUnitario) || 0) - (parseFloat(updatedProduct.descuento) || 0);
         let totalProducto = Math.round(total * 100) / 100;
         updatedProduct.totalProducto = totalProducto;
       }
@@ -349,10 +317,8 @@ useEffect(() => {
       setProveedor({
         id: 0,
         documento: "",
-        numeroDocumento: "",
         nombre: "",
-        estado: "",
-        condicion: "",
+        tipoDocumento: "",
         direccion: "",
       });
       setSelectedMoneda(null);
@@ -360,73 +326,85 @@ useEffect(() => {
       setSelectedProduct({
         id: 0, 
         idEnvase: 0,
-        cantidadPollo: 0,
-        capacidadEnvase: 0,
         codigo: "",
         descripcionA: "",
-        peso: 0,
         nombre: "",
-        unidad: "",
-        cantidad: 1,
-        precioUnitario: 0,
-        descuento: 0,
+        unidad: "", // Estableces manualmente lo que necesites
+        cantidad: 1, // Cantidad inicial
+        precioUnitario: 0, // Puedes dejarlo en 0 o calcularlo según sea necesario
+        descuento: 0, // Descuento inicial
         totalProducto: 0,
       });
     };
     // Crear refs para cada campo importante
-    const comprobanteRef = useRef(null);
     const serieRef = useRef(null);
     const numeroRef = useRef(null);
     const fechaRef = useRef(null);
+    const fechaIngresoRef = useRef(null);
+    const periodoRegistroRef = useRef(null);
+    const fechaVencimientoRef = useRef(null);
     const totalRef = useRef(null);
 
     const validateFields = () => {
       const missingFields = [];
+      let isValid = true;
+      const newTooltips = { serie: false, numero: false };
 
-      if (!formData.comprobante || formData.comprobante === "") {
-        missingFields.push("Comprobante");
-        comprobanteRef.current?.focus();
-        return false;
-      }
       if (!formData.serie || formData.serie === "") {
         missingFields.push("Serie");
         serieRef.current?.focus();
-        return false;
+        isValid = false; 
       }
       if (!formData.numero || formData.numero === "") {
         missingFields.push("Número");
         numeroRef.current?.focus();
-        return false;
+        isValid = false; 
       }
       if (!formData.fecha || formData.fecha === "") {
         missingFields.push("Fecha de Emisión");
         fechaRef.current?.focus();
-        return false;
+        isValid = false; 
+      }
+      if(!details.length > 0){
+        missingFields.push("Detalles");
+        isValid = false; 
+      }
+      if(!formData.fechaIngreso || formData.fechaIngreso === ""){
+        missingFields.push("Fecha de Ingreso");
+        fechaIngresoRef.current?.focus();
+        isValid = false; 
+      }
+      if(!formData.periodoRegistro || formData.periodoRegistro === ""){
+        missingFields.push("Periodo de Registro");
+        periodoRegistroRef.current?.focus();
+        isValid = false; 
+      }
+      if(!formData.fechaVencimiento || formData.fechaVencimiento === ""){
+        missingFields.push("Fecha de Vencimiento");
+        fechaVencimientoRef.current?.focus();
+        isValid = false; 
       }
       if (!formData.total || formData.total === 0) {
         missingFields.push("Total");
         totalRef.current?.focus();
-        return false;
+        isValid = false; 
       }
       if (!proveedor.id || proveedor.id === 0) {
         missingFields.push("ID del Proveedor");
-        return false;
+        isValid = false; 
       }
-      if (!selectedMoneda || !selectedMoneda.codigo || selectedMoneda.codigo === "") {
+      if (!selectedMoneda || !selectedMoneda || selectedMoneda === "") {
         missingFields.push("Código de Moneda");
-        return false;
+        isValid = false; 
       }
 
-      if (missingFields.length > 0) {
-        Swal.fire({
-          icon: "warning",
-          title: "Campos faltantes",
-          text: `Por favor, completa los siguientes campos: ${missingFields.join(", ")}.`,
-        });
-        return false;
-      }
+      setTooltips(newTooltips);
 
-      return true;
+      setTimeout(() => {
+        setTooltips({ serie: false, numero: false });
+      }, 3000); // Esconde los tooltips después de 3 segundos
+
+      return isValid;
     }
       
 
@@ -441,13 +419,12 @@ useEffect(() => {
       )}
       <div className="relative font-semibold bg-white dark:bg-gray-900 dark:bg-opacity-85 bg-opacity-85 p-4 rounded-lg md:overflow-auto md:max-h-screen h-auto">
         <h1 className="text-2xl font-bold mb-4 dark:text-white">
-          Nueva Compra
+          Ingresar Gasto
         </h1>
         {/* Información del Comprobante */}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4 mt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4 mt-2">
           <div>
             <SelectInput
-              ref={comprobanteRef}
               value={formData.comprobante}
               setValue={handleComprobanteChange}
               options={comprobantes}
@@ -462,6 +439,11 @@ useEffect(() => {
               placeholder="Serie"
               typeInput="text"
             />
+            {tooltips.serie && (
+              <div className="absolute -top-8 left-0 bg-red-500 text-white text-sm px-2 py-1 rounded shadow-lg animate-fade">
+                Ingrese la serie
+              </div>
+            )}
           </div>
           <div>
             <TextInput
@@ -471,6 +453,11 @@ useEffect(() => {
               placeholder="Número"
               typeInput="text"
             />
+            {tooltips.numero && (
+              <div className="absolute -top-8 left-0 bg-red-500 text-white text-sm px-2 py-1 rounded shadow-lg animate-fade">
+                Ingrese el número
+              </div>
+            )}
           </div>
           <div>
             <TextInput
@@ -501,7 +488,7 @@ useEffect(() => {
           </div>
         </div>
         {/* Información del proveedor */}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
           <div>
             <SelectInput
               value={selectedTipoDocumento}
@@ -513,9 +500,9 @@ useEffect(() => {
           <div>
             <TextInput
               name="documento" // Add name attribute
-              text={proveedor.numeroDocumento}
-              setText={(value) => handleInputChangeCliente(value, "numeroDocumento")}
-              placeholder="N° Documento"
+              text={proveedor.documento}
+              setText={(value) => handleInputChangeCliente(value, "documento")}
+              placeholder="N° Doc"
               typeInput="text"
               onKeyDown={handleKeyDown} // Add onKeyDown handler
             />
@@ -543,7 +530,7 @@ useEffect(() => {
           </div>
         </div>
         {/* estado y fechas*/}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
           <div className="">
             <SelectInput
                 value={formData.estado}
@@ -554,6 +541,7 @@ useEffect(() => {
           </div>
           <div>
             <TextInput
+              ref={fechaIngresoRef}
               text={formData.fechaIngreso}
               setText={(value) => handleInputChange(value, "fechaIngreso")}
               placeholder="Fecha Ingreso"
@@ -562,6 +550,7 @@ useEffect(() => {
           </div>
           <div>
             <TextInput
+              ref={periodoRegistroRef}
               text={formData.periodoRegistro}
               setText={(value) => handleInputChange(value, "periodoRegistro")}
               placeholder="Periodo Registro"
@@ -570,6 +559,7 @@ useEffect(() => {
           </div>
           <div>
             <TextInput
+              ref={fechaVencimientoRef}
               text={formData.fechaVencimiento}
               setText={(value) => handleInputChange(value, "fechaVencimiento")}
               placeholder="Fecha Vencimiento"
@@ -592,29 +582,11 @@ useEffect(() => {
           Detalles
         </h1>
         {/* Producto */}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:grid-cols-8 md:gap-6 mb-4">
           <div className="">
             <TextInput
-              text={stockPollo}
-              setText={(value) => setStockPollo(value)}
-              placeholder="Stock Pollo"
-              typeInput="number"
-              disabled={true}
-            />
-          </div>
-          <div className="col-span-1">
-            <TextAreaInput
-              text={codigoProductoVenta}
-              setText={(value) => setCodigoProductoVenta(value)}
-              placeholder="Código Producto"
-              typeInput="text"
-              disabled={true}
-            />
-          </div>
-          <div className="">
-            <TextInput
-                text={codigoProducto}
-                setText={(value) => setCodigoProducto(value)}
+                text={selectedProduct.codigo}
+                setText={(value) => handleDetailChange(value, "codigo")}
                 placeholder="Código"
                 typeInput="text"
                 disabled={true}
@@ -652,15 +624,6 @@ useEffect(() => {
           </div>
           <div>
             <TextInput
-              text={selectedProduct.cantidadPollo}
-              setText={(value) => handleDetailChange(value, "cantidadPollo")}
-              placeholder="Cantidad Pollo"
-              typeInput="number"
-              disabled
-            />
-          </div>
-          <div>
-            <TextInput
               text={selectedProduct.cantidad}
               setText={(value) => handleDetailChange(value, "cantidad")}
               placeholder="Cantidad"
@@ -669,17 +632,9 @@ useEffect(() => {
           </div>
           <div>
             <TextInput
-              text={selectedProduct.peso}
-              setText={(value) => handleDetailChange(value, "peso")}
-              placeholder="Peso"
-              typeInput="number"
-            />
-          </div>
-          <div>
-            <TextInput
               text={selectedProduct.precioUnitario}
               setText={(value) => handleDetailChange(value, "precioUnitario")}
-              placeholder="Precio Unitario"
+              placeholder="Precio U."
               typeInput="number"
             />
           </div>
@@ -687,7 +642,7 @@ useEffect(() => {
             <TextInput
               text={selectedProduct.totalProducto}
               setText={(value) => handleDetailChange(value, "totalProducto")}
-              placeholder="Total Producto"
+              placeholder="Total"
               typeInput="number"
               disabled
             />
@@ -709,11 +664,8 @@ useEffect(() => {
                   <th className="px-2 py-2 border-b">Código</th>
                   <th className="px-2 py-2 border-b">Descripción</th>
                   <th className="px-2 py-2 border-b">Unidad</th>
-                  <th className="px-2 py-2 border-b">Cantidad Pollo</th>
                   <th className="px-2 py-2 border-b">Cantidad</th>
-                  <th className="px-2 py-2 border-b">Peso</th>
                   <th className="px-2 py-2 border-b">Precio Unit</th>
-                  <th className="px-2 py-2 border-b">Descuento</th>
                   <th className="px-2 py-2 border-b">Total</th>
                   <th className="px-2 py-2 border-b">Acciones</th>
                 </tr>
@@ -727,11 +679,8 @@ useEffect(() => {
                     <td className="px-2 py-2 border-b">{detail.codigo}</td>
                     <td className="px-2 py-2 border-b">{detail.descripcionA}</td>
                     <td className="px-2 py-2 border-b">{detail.unidad}</td>
-                    <td className="px-2 py-2 border-b">{detail.cantidadPollo}</td>
                     <td className="px-2 py-2 border-b">{detail.cantidad}</td>
-                    <td className="px-2 py-2 border-b">{detail.peso}</td>
                     <td className="px-2 py-2 border-b">{detail.precioUnitario}</td>
-                    <td className="px-2 py-2 border-b">{detail.descuento}</td>
                     <td className="px-2 py-2 border-b">{detail.totalProducto}</td>
                     <td className="px-2 py-2 border-b">
                       <button
@@ -801,4 +750,4 @@ useEffect(() => {
   );
 };
 
-export default CompraNuevo;
+export default IngresarGastos;

@@ -47,7 +47,7 @@ const TablaTiposProductos = () => {
   // Eliminar moneda
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/api/mantenimiento/tipoproductos/delete/${id}`);
+      await axios.delete(`http://localhost:8080/api/inventario/productosTipos/delete/${id}`);
       message.success('Tipo de producto eliminado exitosamente');
       fetchData(pagination); // Refrescar la tabla
     } catch (error) {
@@ -72,17 +72,16 @@ const TablaTiposProductos = () => {
   const handleSave = async (values) => {
     try {
       const tipoProductoRequest = {
-        id: editingTipoProducto ? editingTipoProducto.id : null,
+        idTipoProducto: editingTipoProducto ? editingTipoProducto.idTipoProducto : null,
         codigo: values.codigo,
         nombre: values.nombre,
-        simbolo: values.simbolo,
         idEmpresa: sesionEmpId,
         usuarioCreacion: userCode,
         usuarioActualizacion: editingTipoProducto ? userCode : null
       };
       
       if (editingTipoProducto) {
-        await axios.patch(`http://localhost:8080/api/inventario/productosTipos/update/${editingTipoProducto.id}`, tipoProductoRequest);
+        await axios.patch(`http://localhost:8080/api/inventario/productosTipos/update/${editingTipoProducto.idTipoProducto}`, tipoProductoRequest);
         message.success('Tipo de producto actualizado exitosamente');
       } else {
         await axios.post(`http://localhost:8080/api/inventario/productosTipos/save`, tipoProductoRequest);

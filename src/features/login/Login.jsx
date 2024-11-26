@@ -98,6 +98,7 @@ import ParticlesComponent from '../../components/Particles';
           setPassword={setPassword}
           showPassword={showPassword}
           setShowPassword={setShowPassword}
+          sizeClass="md"
         />
 
         <button

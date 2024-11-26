@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import axios from "../../../config/axiosConfig";
 import { useAuth } from '../../../context/AuthContext';
 import Swal from 'sweetalert2';
+import PropTypes from 'prop-types';
 
-const ConfiguracionMenus = () => {
+const ConfiguracionMenus = ({onPermisosGuardados}) => {
   const [usuarios, setUsuarios] = useState([]);
   const [menus, setMenus] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
@@ -92,6 +93,7 @@ const ConfiguracionMenus = () => {
           title: 'Éxito',
           text: 'Permisos guardados correctamente',
         });
+        onPermisosGuardados();
       } else { // Si la respuesta no es true, indica un problema
         Swal.fire({
           icon: 'error',
@@ -171,6 +173,10 @@ const ConfiguracionMenus = () => {
       </div>
     </div>
   );
+};
+
+ConfiguracionMenus.propTypes = {
+  onPermisosGuardados: PropTypes.func.isRequired
 };
 
 export default ConfiguracionMenus;

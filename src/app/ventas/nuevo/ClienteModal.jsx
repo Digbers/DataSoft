@@ -5,30 +5,31 @@ import TextInput from "../../../components/inputs/TextInput";
 import { useAddEntidad } from "../../../hooks/useAddEntidad";
 import Swal from "sweetalert2";
 
-const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId }) => {
+const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId,setSelectedTipoDocumento }) => {
     const [formData, setFormData] = useState({
         idEmpresa: sesionEmpId,
-        tipoDocumento: "",
-        numeroDocumento: "",
+        documentoTipo: "",
+        nroDocumento: "",
         nombre: "",
         apellidoPaterno: "",
         apellidoMaterno: "",
         direccion: "",
         email: "",
-        telefono: "",
+        celular: "",
+        entidadesTipos: ["CLI"]
     });
     useEffect(() => {
-        setFormData(prev => ({ ...prev, tipoDocumento: tipoDocumento.find(td => td.value === "DNI").value }));
+        setFormData(prev => ({ ...prev, documentoTipo: tipoDocumento.find(td => td.value === "DNI").value }));
     }, [tipoDocumento]);
     
 
-    const numeroDocumentoRef = useRef();
+    const nroDocumentoRef = useRef();
     const nombreRef = useRef();
     const apellidoPaternoRef = useRef();
     const apellidoMaternoRef = useRef();
     const direccionRef = useRef();
     const emailRef = useRef();
-    const telefonoRef = useRef();
+    const celularRef = useRef();
     
     const [errors, setErrors] = useState({});
     
@@ -39,16 +40,16 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
 
     const validateForm = () => {
         const newErrors = {};
-        if (formData.tipoDocumento === "DNI") {
-            if (!/^\d{8}$/.test(formData.numeroDocumento)) {
-                newErrors.numeroDocumento = "El DNI debe tener exactamente 8 dígitos numéricos.";
+        if (formData.documentoTipo === "DNI") {
+            if (!/^\d{8}$/.test(formData.nroDocumento)) {
+                newErrors.nroDocumento = "El DNI debe tener exactamente 8 dígitos numéricos.";
             }
             if (!formData.nombre) newErrors.nombre = "El nombre es obligatorio.";
             if (!formData.apellidoPaterno) newErrors.apellidoPaterno = "El apellido paterno es obligatorio.";
             if (!formData.apellidoMaterno) newErrors.apellidoMaterno = "El apellido materno es obligatorio.";
-        } else if (formData.tipoDocumento === "RUC") {
-            if (!/^\d{11}$/.test(formData.numeroDocumento)) {
-                newErrors.numeroDocumento = "El RUC debe tener exactamente 11 dígitos numéricos.";
+        } else if (formData.documentoTipo === "RUC") {
+            if (!/^\d{11}$/.test(formData.nroDocumento)) {
+                newErrors.nroDocumento = "El RUC debe tener exactamente 11 dígitos numéricos.";
             }
             if (!formData.nombre) newErrors.nombre = "El nombre es obligatorio.";
         }
@@ -66,6 +67,7 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
                 const response = await addEntidad(formData);
                 if (response) {
                     setEntidad(response);
+                    setSelectedTipoDocumento(formData.documentoTipo);
                     onClose();
                 }
             } catch (error) {
@@ -85,8 +87,8 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
 
             // Enfocar el campo correspondiente al primer error
             switch (firstErrorKey) {
-                case 'numeroDocumento':
-                    numeroDocumentoRef.current?.focus();
+                case 'nroDocumento':
+                    nroDocumentoRef.current?.focus();
                     break;
                 case 'nombre':
                     nombreRef.current?.focus();
@@ -103,8 +105,8 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
                 case 'email':
                     emailRef.current?.focus();
                     break;
-                case 'telefono':
-                    telefonoRef.current?.focus();
+                case 'celular':
+                    celularRef.current?.focus();
                     break;
                 default:
                     break;
@@ -122,8 +124,8 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
                 <form>
                     <div className="mb-4">
                         <SelectInput
-                            value={formData.tipoDocumento}
-                            setValue={(value) => handleInputChange(value, "tipoDocumento")}
+                            value={formData.documentoTipo}
+                            setValue={(value) => handleInputChange(value, "documentoTipo")}
                             options={tipoDocumento}
                             placeholder="Tipo de Documento"
                         />
@@ -131,11 +133,11 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
 
                     <div className="mb-4">
                         <TextInput
-                            ref={numeroDocumentoRef}
-                            text={formData.numeroDocumento}
-                            setText={(value) => handleInputChange(value, "numeroDocumento")}
+                            ref={nroDocumentoRef}
+                            text={formData.nroDocumento}
+                            setText={(value) => handleInputChange(value, "nroDocumento")}
                             placeholder="Número de Documento"
-                            error={errors.numeroDocumento}
+                            error={errors.nroDocumento}
                             typeInput="text"
                         />
                     </div>
@@ -149,7 +151,7 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
                             typeInput="text"
                         />
                     </div>
-                    {formData.tipoDocumento === "DNI" && (
+                    {formData.documentoTipo === "DNI" && (
                         <>
                             <div className="mb-4">
                                 <TextInput
@@ -193,10 +195,10 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId 
                     </div>
                     <div className="mb-4">
                         <TextInput
-                            ref={telefonoRef}
-                            text={formData.telefono}
-                            setText={(value) => handleInputChange(value, "telefono")}
-                            placeholder="Teléfono"
+                            ref={celularRef}
+                            text={formData.celular}
+                            setText={(value) => handleInputChange(value, "celular")}
+                            placeholder="Celular"
                             typeInput="text"
                         />
                     </div>
@@ -228,6 +230,7 @@ ClienteModal.propTypes = {
     tipoDocumento: PropTypes.array.isRequired,
     setEntidad: PropTypes.func.isRequired,
     sesionEmpId: PropTypes.number.isRequired,
+    setSelectedTipoDocumento: PropTypes.func.isRequired,
 };
 
 export default ClienteModal;

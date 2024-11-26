@@ -41,7 +41,6 @@ const UserTable = () => {
           label: tipo.nombre
         }));
         setTipos(tipos);
-        console.log(tipos);
       } catch (error) {
         console.error('Error fetching tipos:', error);
         message.error('Error fetching tipos');
@@ -177,18 +176,21 @@ const UserTable = () => {
         idProducto: editingProducto ? editingProducto.idProducto : null,  // Si estamos editando, usamos el id existente
         codigo: values.codigo,
         nombre: values.nombre,
-        tipo: { codigo: values.tipo },  // Asignar el tipo como un objeto con el value
-        empresa: {id: sesionEmpId}, 
+        tipo: values.tipo,
+        unidad: values.unidad,
+        empresa: sesionEmpId, 
         stockAlmacenId: editingProducto ? editingProducto.stockAlmacenId : null,
         almacenId: editingProducto ? editingProducto.almacenId : sesionAlmacenId,
         envaseId: values.envase,
+        empresaId: sesionEmpId,
         cantidadEnvase: values.cantidadEnvase,
         cantidadProducto: values.cantidadProducto,
         pesoTotal: values.pesoTotal,
-        fechaRegistro: null, 
+        fechaRegistro: null, //el backend lo setea
         generarStock: values.generarStock,
         estado: values.estado,
-        precioSugerido: values.precioSugerido,
+        precioVenta: values.precioVenta,
+        precioCompra: values.precioCompra,
         usuarioCreacion: userCode, 
         usuarioActualizacion: editingProducto ? userCode : null  
       };
@@ -302,8 +304,15 @@ const UserTable = () => {
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
-      title: 'Precio Unitario',
-      dataIndex: 'precioSugerido',
+      title: 'Precio Venta',
+      dataIndex: 'precioVenta',
+      sorter: true,
+      filterSearch: true,
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+    },
+    {
+      title: 'Precio Compra',
+      dataIndex: 'precioCompra',
       sorter: true,
       filterSearch: true,
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
@@ -363,7 +372,7 @@ const UserTable = () => {
           dataSource={productos}
           pagination={pagination}
           loading={loading}
-          rowKey="id"
+          rowKey={(record) => `${record.idProducto}-${record.stockAlmacenId}`}
           scroll={{
             x: 'max-content',
             y: 400,

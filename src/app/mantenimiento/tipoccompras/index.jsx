@@ -13,7 +13,6 @@ const TablaTiposComproabantesCompras = () => {
   const { sesionEmpId, userCode } = useAuth();
   const [form] = Form.useForm();
   
-  
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
     try {

@@ -13,7 +13,6 @@ const TablaTiposDocumentos = () => {
   const { sesionEmpId, userCode } = useAuth();
   const [form] = Form.useForm();
   
-  
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
     try {
@@ -73,10 +72,10 @@ const TablaTiposDocumentos = () => {
     try {
       const monedaRequest = {
         id: editingTipoDocumento ? editingTipoDocumento.id : null,
-        codigo: values.codigo,
+        docCodigo: values.docCodigo,
         descripcion: values.descripcion,
         codigoSunat: values.codigoSunat,
-        idEmpresa: sesionEmpId,
+        empresa: sesionEmpId,
         usuarioCreacion: userCode,
         usuarioActualizacion: editingTipoDocumento ? userCode : null
       };
