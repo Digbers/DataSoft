@@ -196,7 +196,7 @@ const TablaTiposProductos = () => {
             <Button key={`edit-${record.id}`} onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
             <Popconfirm
               key={`delete-${record.id}`}
-              title="¿Estás seguro de eliminar esta moneda?"
+              title="¿Estás seguro de eliminar este tipo de producto?"
               onConfirm={() => handleDelete(record.id)}
               okText="Sí"
               cancelText="No"
@@ -254,7 +254,7 @@ const TablaTiposProductos = () => {
         form={form}
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
-        moneda={editingTipoProducto}
+        tipoProducto={editingTipoProducto}
       />
     </div>
   );

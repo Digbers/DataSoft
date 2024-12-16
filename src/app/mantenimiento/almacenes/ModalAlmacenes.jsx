@@ -1,15 +1,20 @@
 import { useEffect } from 'react';
-import { Modal, Form, Input } from 'antd';
+import { Modal, Form, Input, Select } from 'antd';
 import PropTypes from 'prop-types';
 import Swal from 'sweetalert2';
-const ModalAlmacen = ({ visible, form, onClose, onSave, almacen, tipos }) => {
+const ModalAlmacen = ({ visible, form, onClose, onSave, almacen, tipos, padres }) => {
 
   // Cargar los valores de la moneda en el formulario si estamos editando
   useEffect(() => {
     if (almacen) {
       console.log(almacen);
-      form.setFieldsValue(almacen);
-      console.log(tipos);
+      
+        form.setFieldsValue({
+          tipoAlmacen: almacen.tipoAlmacen,
+          almacenPadre: almacen.almacenPadre === null ? padres[0]?.value : almacen.almacenPadre,
+          nombre: almacen.nombre,
+        }); 
+      
     } else {
       form.resetFields();
     }
@@ -35,27 +40,34 @@ const ModalAlmacen = ({ visible, form, onClose, onSave, almacen, tipos }) => {
   };
 
   return (
-    <Modal
-      title={almacen ? 'Editar Almacén' : 'Nuevo Almacén'}
-      open={visible}
-      onCancel={onClose}
-      onOk={handleSubmit}
-      okText="Guardar"
-      cancelText="Cancelar"
-    >
-      <Form form={form} layout="vertical">
+      <Modal
+        title={almacen ? 'Editar Almacén' : 'Nuevo Almacén'}
+        open={visible}
+        onCancel={onClose}
+        onOk={handleSubmit}
+        okText="Guardar"
+        cancelText="Cancelar"
+      >
+        <Form form={form} layout="vertical"
+          initialValues={{
+            tipoAlmacen: tipos[0]?.value,
+            almacenPadre: padres[0]?.value,
+          }}
+        >
         <Form.Item
-          name="codigo"
-          label="Código"
+          name="tipoAlmacen"
+          label="Tipo"
           rules={[
-            { required: true, message: 'Por favor ingrese el código' },
-            { max: 3, message: 'El código debe tener máximo 3 caracteres' }
+            { required: true, message: 'Por favor ingrese el tipo' },
           ]}
         >
-          <Input
-            maxLength={3}
-            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
-          />
+          <Select>
+            {tipos.map(tipo => (
+              <Select.Option key={tipo.value} value={tipo.value}>
+                {tipo.label}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
         <Form.Item
           name="nombre"
@@ -71,18 +83,22 @@ const ModalAlmacen = ({ visible, form, onClose, onSave, almacen, tipos }) => {
           />
         </Form.Item>
         <Form.Item
-          name="simbolo"
+          name="almacenPadre"
           label="Padre"
           rules={[
             { required: true, message: 'Por favor ingrese el padre' },
-            { max: 3, message: 'El padre debe tener máximo 3 caracteres' }
           ]}
         >
-          <Input
-            maxLength={3}
-            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
-          />
+          <Select>
+            {/* Opciones dinámicas */}
+            {padres.map(padre => (
+              <Select.Option key={padre.value} value={padre.value}>
+                {padre.label}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
+
       </Form>
     </Modal>
   );
@@ -95,6 +111,7 @@ ModalAlmacen.propTypes = {
   form: PropTypes.object.isRequired,
   almacen: PropTypes.object,
   tipos: PropTypes.array,
+  padres: PropTypes.array,
 };
 
 export default ModalAlmacen;

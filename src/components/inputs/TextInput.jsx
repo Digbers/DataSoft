@@ -44,7 +44,7 @@ TextInput.displayName = 'TextInput';
 
 // PropTypes
 TextInput.propTypes = {
-  text: PropTypes.string.isRequired,
+  text: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   setText: PropTypes.func.isRequired,
   placeholder: PropTypes.string.isRequired,
   typeInput: PropTypes.string.isRequired,

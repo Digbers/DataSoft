@@ -4,6 +4,7 @@ import axios from "../../../config/axiosConfig";
 import CuentasModal from './CuentasModal';
 import { useAuth } from '../../../context/AuthContext';
 import Swal from 'sweetalert2';
+import EditModal from './EditModal';
 
 const CuentasXPagar = () => {
   const [comprobantes, setComprobantes] = useState([]);
@@ -11,11 +12,20 @@ const CuentasXPagar = () => {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [editingComprobante, setEditingComprobante] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalEditVisible, setModalEditVisible] = useState(false);
+  const [cobrobanteEdit, setComprobanteEdit] = useState(null);
   const [form] = Form.useForm();
+  const [formEdit] = Form.useForm();
   const [comprobantesTipos, setComprobantesTipos] = useState([]);
   const [monedas, setMonedas] = useState([]);
+  const [formasPagos, setFormasPagos] = useState([]);
   const { sesionEmpId, userCode} = useAuth();
-  
+  const [loadingRows, setLoadingRows] = useState({});
+  const [expandedData, setExpandedData] = useState({});
+  const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+  const [inPagados, setInPagados] = useState(false);
+  const [pago, setPago] = useState(null);
+
   useEffect(() => {
     const fetchMonedas = async () => {
       try {
@@ -53,16 +63,217 @@ const CuentasXPagar = () => {
         });
       }
     };
+    const fetchFormasPagos = async () => {
+      try {
+        const response = await axios.get(`http://localhost:8080/api/finanzas/metodos-pagos/find-by-empresa/${sesionEmpId}`);
+        const formasPagos = response.data.map((formaPago) => ({
+          value: formaPago.codigo,
+          label: formaPago.descripcion,
+        }));
+        setFormasPagos(formasPagos);
+      } catch (error) {
+        console.error('Error fetching formas de pagos:', error);
+        Swal.fire({
+          icon: "error",
+          title: "Error al buscar formas de pagos",
+          text: "No se pudo obtener la lista de formas de pagos.",
+        });
+      }
+    };
     fetchMonedas();
+    fetchFormasPagos();
     fetchComprobantesTipos();
   }, [sesionEmpId]);
+
+  const handleInPagados = () => {
+    setInPagados(!inPagados);
+  };
+
+
+  const handleSave = async (values) => {
+    try{
+      values.usuarioCreacion = userCode;
+      values.idComprobanteVenta = editingComprobante.idComprobanteVenta;
+      values.idEmpresa = sesionEmpId;
+      //console.log(values);
+      const response = await axios.post(`http://localhost:8080/api/finanzas/cuentas-pagar/save-pago`, values);
+      console.log(response.data);
+      message.success('Pago guardado correctamente');
+      setModalVisible(false);
+      form.resetFields();
+      fetchData(pagination);
+    } catch (error) {
+      console.error('Error al guardar el pago:', error);
+      message.error('No se pudo guardar el pago');
+    }
+  };
+  const handleUpdate = async (values) => {
+    try{
+      //console.log(values);
+      values.usuarioActualizacion = userCode;
+
+      await axios.patch(`http://localhost:8080/api/finanzas/cuentas-pagar/update-pago/${values.id}`, values);
+      //console.log(response.data);
+      message.success('Pago actualizado correctamente');
+      setModalEditVisible(false);
+      formEdit.resetFields();
+      fetchData(pagination);
+      // Refrescar la fila expandida si corresponde
+      const idComprobanteCompra = cobrobanteEdit.idComprobanteCompra; // Asegúrate de que esto contiene la fila relacionada
+      if (expandedRowKeys.includes(idComprobanteCompra)) {
+        const pagos = await fetchPagos({ idComprobanteCompra });
+        setExpandedData((prev) => ({
+          ...prev,
+          [idComprobanteCompra]: pagos, // Actualiza la fila expandida específica
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error al actualizar el pago:', error);
+      message.error('No se pudo actualizar el pago');
+    }
+  }
+  const fetchPagos = async (comprobante) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/finanzas/cuentas-pagar/find-pagos-by-comprobante/${comprobante.idComprobanteCompra}`);
+      //console.log(response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error('Error fetching pagos:', error);
+      message.error('No se pudieron cargar los pagos');
+      return [];
+    }
+  };
+  const handleExpand = async (expanded, record) => {
+    if (expanded) {
+      // Mostrar indicador de carga para la fila expandida
+      setLoadingRows((prev) => ({ ...prev, [record.idComprobanteCompra]: true }));
+
+      // Obtener datos de cobros
+      const pagos = await fetchPagos(record);
+
+      // Almacenar datos en el estado
+      setExpandedData((prev) => ({
+        ...prev,
+        [record.idComprobanteCompra]: pagos,
+      }));
+
+      // Finalizar la carga
+      setLoadingRows((prev) => ({ ...prev, [record.idComprobanteCompra]: false }));
+
+      // Agregar la clave de la fila expandida
+      setExpandedRowKeys((prev) => [...prev, record.idComprobanteCompra]);
+    } else {
+      // Remover la clave de la fila expandida
+      setExpandedRowKeys((prev) =>
+        prev.filter((key) => key !== record.idComprobanteCompra)
+      );
+    }
+  };
+  const handleEditarPago = (record, recordC) => {
+    console.log(recordC);
+    let recordComprobante = {
+      idComprobanteCompra: recordC.idComprobanteCompra,
+      monedaCodigo: recordC.monedaCodigo,
+      saldo: recordC.saldo
+    };
+    //console.log(record);
+    setComprobanteEdit(recordComprobante);
+    setPago(record);
+    setModalEditVisible(true);
+  };
+
+  const expandedRowRender = (recordC) => {
+    const pagos = expandedData[recordC.idComprobanteCompra] || [];
+    const pagosColumns = [
+      {
+        title: 'Fecha',
+        dataIndex: 'fechaPago',
+        key: 'fechaPago',
+      },
+      {
+        title: 'Monto',
+        dataIndex: 'montoPagado',
+        key: 'montoPagado',
+      },
+      {
+        title: 'Formas de Cobro ',
+        dataIndex: 'formasPagosEntity',
+        key: 'formasPagosEntity',
+      },
+      {
+        title: 'Descripción',
+        dataIndex: 'descripcion',
+        key: 'descripcion',
+      },
+      {
+        title: 'Moneda',
+        dataIndex: 'monedasEntity',
+        key: 'monedasEntity',
+      },
+      {
+        title: 'Usuario Creación',
+        dataIndex: 'usuarioCreacion',
+        key: 'usuarioCreacion',
+      },
+      {
+        title: 'Fecha Creación',
+        dataIndex: 'fechaCreacion',
+        key: 'fechaCreacion',
+      },
+      {
+        title: 'Usuario Actualización',
+        dataIndex: 'usuarioActualizacion',
+        key: 'usuarioActualizacion',
+      },
+      {
+        title: 'Fecha Actualización',
+        dataIndex: 'fechaActualizacion',
+        key: 'fechaActualizacion',
+      },
+      {
+        title: 'Acciones',
+        key: 'action',
+        render: (text, record) => (
+          console.log(record),
+          <Button onClick={() => handleEditarPago(record, recordC)} icon={<i className="fas fa-edit" />} />
+        ),
+      },
+    ];
+
+    return (
+      <>
+      <Table
+        columns={pagosColumns}
+        dataSource={pagos}
+        pagination={false}
+        rowKey="id"
+        loading={loadingRows[recordC.idComprobanteCompra]}
+      />  
+      {/* Conditionally render ProductoModal only when envases and tipos are loaded */}
+      {monedas.length > 0 && formasPagos.length > 0 && pago &&  (
+        <EditModal
+          visible={modalEditVisible}
+          onClose={() => setModalEditVisible(false)}
+          onSave={handleUpdate}
+          form={formEdit}
+          comprobante={cobrobanteEdit}
+          monedas={monedas}
+          formasPagos={formasPagos}
+          pago={pago}
+        />
+      )}
+      </>
+    );
+  };
 
   
 
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
     try {
-      const { data } = await axios.get('http://localhost:8080/api/finanzas/cuentas-cobrar/findAll', {
+      const { data } = await axios.get('http://localhost:8080/api/finanzas/cuentas-pagar/findAll', {
         params: {
           page: pagination.current - 1, // El backend comienza en 0
           size: pagination.pageSize,
@@ -94,13 +305,9 @@ const CuentasXPagar = () => {
   useEffect(() => {
     fetchData(pagination);
   }, []);
-  const handleNuevoCobro = (record) => {
+  const handleNuevoPago = (record) => {
     console.log(record);
     setEditingComprobante(record);
-  };
-  const handleCobros = (record) => {
-    console.log(record);
-    console.log(userCode);
   };
   const columns = [
     {
@@ -132,22 +339,6 @@ const CuentasXPagar = () => {
           <Tag color={color}>{comprobanteTipo.label.toUpperCase()}</Tag>
         ) : 'Sin tipo';
       },
-      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    },
-    {
-      title: 'Serie',
-      dataIndex: 'serie',
-      sorter: true,
-      width: '5%',
-      filterSearch: true,
-      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    },
-    {
-      title: 'Número',
-      dataIndex: 'numero',
-      sorter: true,
-      width: '5%',
-      filterSearch: true,
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -221,8 +412,7 @@ const CuentasXPagar = () => {
       key: 'actiones',
       render: (text, record) => (
         <>
-          <Button onClick={() => handleNuevoCobro(record)} icon={<i className="fas fa-plus" />} />
-          <Button onClick={() => handleCobros(record)} icon={<i className="fas fa-money-bill" />} />
+          <Button onClick={() => handleNuevoPago(record)} icon={<i className="fas fa-plus" />} />
         </>
       ),
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
@@ -234,10 +424,16 @@ const CuentasXPagar = () => {
       {/* Botones de exportación */}
       <div className="mb-2 flex justify-between border rounded-lg dark:bg-gray-800 bg-white text-gray-500 dark:text-gray-300 p-2">
           <div className="mb-2 flex flex-row justify-end">
+            <Button
+              onClick={handleInPagados}
+              icon={<i className={`fas ${inPagados ? 'fa-check' : 'fa-times'}`} />}
+            >
+              {inPagados ? 'Pagados' : 'No Pagados'}
+            </Button>
           </div>
           {/* Tabla de Ant Design */}
           <div className="mb-2 flex justify-between">
-            <h3 className="text-2xl font-bold">Comprobantes Ventas</h3>
+            <h3 className="text-2xl font-bold">Cuentas a Pagar</h3>
           </div>
       </div>
       <Table
@@ -245,7 +441,16 @@ const CuentasXPagar = () => {
         dataSource={comprobantes}
         pagination={pagination}
         loading={loading}
-        rowKey="id"
+        rowKey="idComprobanteCompra"
+        expandable={{
+          expandedRowRender,
+          expandedRowKeys,
+          onExpand: handleExpand,
+          expandIcon: ({ expanded, onExpand, record }) => 
+            expanded 
+              ? <i className="fas fa-chevron-up" onClick={e => onExpand(record, e)} />
+              : <i className="fas fa-chevron-down" onClick={e => onExpand(record, e)} />
+        }}
         scroll={{
           x: 'max-content',
           y: 400,
@@ -259,11 +464,11 @@ const CuentasXPagar = () => {
         <CuentasModal
           visible={modalVisible}
           onCancel={() => setModalVisible(false)}
-          //onOk={handleSave}
+          onSave={handleSave}
           form={form}
           comprobante={editingComprobante}
           monedas={monedas}
-          comprobantesTipos={comprobantesTipos}
+          formasPagos={formasPagos}
         />
       )}
     </div>

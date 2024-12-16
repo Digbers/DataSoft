@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, message, Popconfirm, Form } from 'antd';
+import { Table, Button, message, Popconfirm, Form, Tag, Checkbox } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import { useAuth } from '../../../context/AuthContext';
 import ModalTrabajadores from './ModalTrabajadores';  // Importar el nuevo componente de modal
@@ -19,8 +19,8 @@ const TablaTrabajadores = () => {
       try{
         const response = await axios.get(`http://localhost:8080/api/empresas/documentos/find-by-empresa/${sesionEmpId}`);
         const documentosTipos = response.data.map(documento => ({
-          id: documento.id,
-          nombre: documento.docCodigo
+          id: documento.docCodigo,
+          codigo: documento.docCodigo
         }));
         setDocumentosTipos(documentosTipos);
       } catch (error) {
@@ -75,29 +75,36 @@ const TablaTrabajadores = () => {
   };
   
   // Abrir el modal de agregar
-  const handleAdd = () => {
-    setEditingTrabajador(null);
-    form.resetFields();
-    setModalVisible(true);
-  };
+  //const handleAdd = () => {
+  //  setEditingTrabajador(null);
+  //  form.resetFields();
+  //  setModalVisible(true);
+  //};
   
   // Guardar cambios en el modal
   const handleSave = async (values) => {
     try {
       const trabajadorRequest = {
         id: editingTrabajador ? editingTrabajador.id : null,
-        codigo: values.codigo,
         nombre: values.nombre,
+        apellidoPaterno: values.apellidoPaterno,
+        apellidoMaterno: values.apellidoMaterno,
+        documentoTipo: values.documentoTipo,
+        nroDocumento: values.nroDocumento,
+        direccion: values.direccion,
+        email: values.email,
+        celular: values.celular,
+        estado: values.estado,
+        sueldo: values.sueldo,
         idEmpresa: sesionEmpId,
-        usuarioCreacion: userCode,
         usuarioActualizacion: editingTrabajador ? userCode : null
       };
       
       if (editingTrabajador) {
-        await axios.patch(`http://localhost:8080/api/mantenimiento/trabajadores/update/${editingTrabajador.id}`, trabajadorRequest);
+        await axios.patch(`http://localhost:8080/api/empresas/entidades/update/${editingTrabajador.id}`, trabajadorRequest);
         message.success('Trabajador actualizado exitosamente');
       } else {
-        await axios.post(`http://localhost:8080/api/mantenimiento/trabajadores/save`, trabajadorRequest);
+        await axios.post(`http://localhost:8080/api/empresas/entidades/save`, trabajadorRequest);
         message.success('Trabajador creado exitosamente');
       }
       
@@ -150,7 +157,19 @@ const TablaTrabajadores = () => {
         sorter: true,
         filterSearch: true,
         className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-        render: (documentoTipo) => documentosTipos.find(tipo => tipo.docCodigo === documentoTipo)?.nombre || 'N/A'
+        render: (documentoTipo) => {
+          // Buscar el tipo por el ID y definir el color
+          const documentoTipoAC = documentosTipos.find(tipo => tipo.codigo === documentoTipo);
+          let color = '';
+          if (documentoTipoAC?.value === 'DNI') {
+            color = 'green';
+          } else if (documentoTipoAC?.value === 'RUC') {
+            color = 'blue';
+          } 
+          return documentoTipoAC ? (
+            <Tag color={color}>{documentoTipoAC.codigo}</Tag>
+          ) : 'Sin tipo';
+        },
     },
     {
         title: 'Número',
@@ -189,16 +208,24 @@ const TablaTrabajadores = () => {
         dataIndex: 'estado',
         sorter: true,
         filterSearch: true,
-        className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400'
-        
+        className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+        render: (estado) => {
+          if (estado === true) {
+            return <Checkbox checked={estado} />;
+          } else {
+            return <Checkbox />;
+          }
+        },
     },
     {
         title: 'Sueldo',
         dataIndex: 'sueldo',
         sorter: true,
         filterSearch: true,
-        className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400'
-        
+        className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+        render: (sueldo) => {
+          return sueldo ? sueldo : '0.00';
+        },
     },
     {
       title: 'Acciones',
@@ -226,9 +253,9 @@ const TablaTrabajadores = () => {
       {/* Título y botón "Nuevo" */}
       <div className="mb-2 flex justify-between border rounded-lg dark:bg-gray-800 bg-white text-gray-500 dark:text-gray-300 p-2">
         <h3 className="text-2xl font-bold">Trabajadores</h3>
-        <Button type="primary" icon={<i className="fas fa-plus" />} onClick={() => handleAdd()}>
+        {/*<Button type="primary" icon={<i className="fas fa-plus" />} onClick={() => handleAdd()}>
           Nuevo
-        </Button>
+        </Button>*/}
       </div>
   
       {/* Contenedor de la tabla con overflow */}
@@ -266,6 +293,7 @@ const TablaTrabajadores = () => {
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         trabajador={editingTrabajador}
+        documentosTipos={documentosTipos}
       />
     </div>
   );

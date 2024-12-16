@@ -7,7 +7,7 @@ import { debounce } from "lodash";
 const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, setTipoDocumentos, setEstados, setStockPollo }) => {
   const [stockPolloEventSource, setStockPolloEventSource] = useState(null);
 
-  const buildResponseCompra = (formData, details, proveedor, selectedMoneda) => {
+  const buildRequestCompra = (formData, details, proveedor, selectedMoneda) => {
 
     const requestDTO = {
       comprobantesComprasCa: {
@@ -32,7 +32,8 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
         comprobantesComprasDetalle: details.map((detail, index) => ({
           numero: index + 1,
           cantidad: detail.cantidad,
-          idProducto: detail.idProducto,
+          descripcion: detail.descripcionA,
+          idProducto: detail.id,
           idEnvase: detail.idEnvase,
           peso: detail.peso,
           precioUnitario: detail.precioUnitario,
@@ -249,7 +250,7 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
       fetchProveedores,
       fetchTipoDocumentos,
       fetchComprasEstados,
-      buildResponseCompra,
+      buildRequestCompra,
       handleStockPollo,
     };
   };

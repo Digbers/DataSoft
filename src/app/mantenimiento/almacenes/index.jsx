@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, message, Popconfirm, Form} from 'antd';
+import { Table, Button, message, Popconfirm, Form, Tag } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import { useAuth } from '../../../context/AuthContext';
 import ModalAlmacen from './ModalAlmacenes';
@@ -13,6 +13,7 @@ const Almacenes = () => {
   const { sesionEmpId, userCode } = useAuth();
   const [form] = Form.useForm();
   const [almacenesTipos, setAlmacenesTipos] = useState([]);
+  const [almacenesPadres, setAlmacenesPadres] = useState([]);
 
   const fetchData = async (pagination, sorter = {}) => {
     setLoading(true);
@@ -50,7 +51,22 @@ const Almacenes = () => {
         message.error('Error fetching almacenes tipos');
       }
     };
+    const fetchAlmacenesPadres = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/inventario/almacenes/find/empresa/' + sesionEmpId);
+        const padres = response.data.map(padre => ({
+          value: padre.id,
+          label: padre.nombre
+        }));
+        padres.unshift({ value: 0, label: 'Ninguno' });
+        setAlmacenesPadres(padres);
+      } catch (error) {
+        console.error('Error fetching almacenes padres:', error);
+        message.error('Error fetching almacenes padres');
+      }
+    };
     fetchAlmacenesTipos();
+    fetchAlmacenesPadres();
   }, []);
   // Esto asegura que solo se haga una llamada inicial para cargar los datos.
   useEffect(() => {
@@ -86,9 +102,9 @@ const Almacenes = () => {
     try {
       const almacenRequest = {
         id: editingAlmacen ? editingAlmacen.id : null,
-        codigo: values.codigo,
+        tipoAlmacen: values.tipoAlmacen,
         nombre: values.nombre,
-        simbolo: values.simbolo,
+        almacenPadre: values.almacenPadre === 0 ? null : values.almacenPadre,
         idEmpresa: sesionEmpId,
         usuarioCreacion: userCode,
         usuarioActualizacion: editingAlmacen ? userCode : null
@@ -121,9 +137,19 @@ const Almacenes = () => {
   const columns = [
     {
       title: 'Tipo',
-      dataIndex: 'tipo',
+      dataIndex: 'tipoAlmacen',
       sorter: true,
       filterSearch: true,
+      render: (record) => {
+        const tipo = almacenesTipos.find(tipo => tipo.value === record);
+        if (tipo.value === 'TIE') {
+          return <Tag color="blue">{tipo.label}</Tag>;
+        } else if (tipo.value === 'ALM') {
+          return <Tag color="green">{tipo.label}</Tag>;
+        } else {
+          return <Tag color="default">{tipo.label}</Tag>;
+        }
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -135,9 +161,13 @@ const Almacenes = () => {
     },
     {
       title: 'Padre',
-      dataIndex: 'simbolo',
+      dataIndex: 'almacenPadre',
       sorter: true,
       filterSearch: true,
+      render: (record) => {
+        const padre = almacenesPadres.find(padre => padre.value === record);
+        return padre ? padre.label : 'Ninguno';
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -148,7 +178,7 @@ const Almacenes = () => {
         <>
           <Button onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
           <Popconfirm
-            title="¿Estás seguro de eliminar esta moneda?"
+            title="¿Estás seguro de eliminar este almacén?"
             onConfirm={() => handleDelete(record.id)}
             okText="Sí"
             cancelText="No"
@@ -200,7 +230,7 @@ const Almacenes = () => {
         sticky
       />
       {/* Modal para Moneda */}
-      {almacenesTipos.length > 0 && (
+      {almacenesTipos.length > 0 && almacenesPadres.length > 0 && (
         <ModalAlmacen
           visible={modalVisible}
           form={form}
@@ -208,6 +238,7 @@ const Almacenes = () => {
           onSave={handleSave}
           almacen={editingAlmacen}
           tipos={almacenesTipos}
+          padres={almacenesPadres}
         />
       )}
     </div>

@@ -5,7 +5,6 @@ import Swal from 'sweetalert2';
 
 const ModalTiposProductos = ({ visible, form, onClose, onSave, tipoProducto }) => {
 
-  // Cargar los valores de la moneda en el formulario si estamos editando
   useEffect(() => {
     if (tipoProducto) {
       console.log(tipoProducto);
@@ -59,10 +58,10 @@ const ModalTiposProductos = ({ visible, form, onClose, onSave, tipoProducto }) =
         </Form.Item>
         <Form.Item
           name="nombre"
-          label="Nombre"
+          label="Descripción"
           rules={[
-            { required: true, message: 'Por favor ingrese el nombre' },
-            { max: 100, message: 'El nombre debe tener máximo 100 caracteres' }
+            { required: true, message: 'Por favor ingrese la descripción' },
+            { max: 100, message: 'La descripción debe tener máximo 100 caracteres' }
           ]}
         >
           <Input

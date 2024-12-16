@@ -8,7 +8,7 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
   const [stockPolloEventSource, setStockPolloEventSource] = useState(null);
   const [numeroEventSource, setNumeroEventSource] = useState(null);
 
-  const buildResponseVenta = (formData, details, cliente, selectedMoneda, selectedsPaymentMethod, numero) => {
+  const buildRequestVenta = (formData, details, cliente, selectedMoneda, selectedsPaymentMethod, numero) => {
       const requestDTO = {
         comprobantesVentasCabDTO: {
           idEmpresa: formData.empresa,
@@ -32,9 +32,10 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
               cantidad: detail.cantidad,
               idProducto: detail.id,
               idEnvase: detail.idEnvase,
-              peso: detail.peso,//en revion FALTA VERRR
+              peso: detail.peso,
               precioUnitario: detail.precioUnitario,
               descuento: detail.descuento,
+              tara: detail.tara,// se agrego este campo
               usuarioCreacion: formData.usuarioCreacion,
           })),
           comprobantesVentasCuotas: formData.estado === "CRE" ? [{
@@ -315,7 +316,7 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
       fetchTipoDocumentos,
       fetchVentasEstados,
       fetchComprobante,
-      buildResponseVenta,
+      buildRequestVenta,
       handleStockPollo,
     };
   };

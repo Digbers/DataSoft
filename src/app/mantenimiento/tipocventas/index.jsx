@@ -16,13 +16,12 @@ const TablaTiposComprobantesVentas = () => {
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
     try {
-      const { data } = await axios.get(`http://localhost:8080/api/compras/tipos/findAll/${sesionEmpId}`, {
+      const { data } = await axios.get(`http://localhost:8080/api/ventas/tipos/findAll/${sesionEmpId}`, {
         params: {
           page: pagination.current - 1,
           size: pagination.pageSize,
           codigo: filters.codigo ? filters.codigo[0] : null,
           descripcion: filters.descripcion ? filters.descripcion[0] : null,
-          codigoSunat: filters.codigoSunat ? filters.codigoSunat[0] : null,
           sort: sorter.field ? `${sorter.field},${sorter.order === 'ascend' ? 'asc' : 'desc'}` : null,
         },
       });
@@ -46,7 +45,7 @@ const TablaTiposComprobantesVentas = () => {
   // Eliminar moneda
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/api/compras/tipos/delete/${id}`);
+      await axios.delete(`http://localhost:8080/api/ventas/tipos/delete/${id}`);
       message.success('Tipo de comprobante de compra eliminado exitosamente');
       fetchData(pagination); // Refrescar la tabla
     } catch (error) {

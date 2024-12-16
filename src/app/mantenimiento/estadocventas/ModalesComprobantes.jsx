@@ -1,19 +1,20 @@
-import { useEffect } from 'react';
-import { Modal, Form, Input } from 'antd';
+import { useEffect} from 'react';
+import { Modal, Form, Input} from 'antd';
 import PropTypes from 'prop-types';
 import Swal from 'sweetalert2';
 
-const UnidadesModal = ({ visible, form, onClose, onSave, unidad }) => {
+const ModalComprobantes = ({ visible, form, onClose, onSave, estadoComprobante }) => {
+
 
   // Cargar los valores de la moneda en el formulario si estamos editando
   useEffect(() => {
-    if (unidad) {
-      console.log(unidad);
-      form.setFieldsValue(unidad);
+    if (estadoComprobante) {
+      //console.log(entidad);
+      form.setFieldsValue(estadoComprobante);
     } else {
       form.resetFields();
     }
-  }, [unidad, form]);
+  }, [estadoComprobante, form]);
   
   const handleSubmit = async () => {
     try {
@@ -36,14 +37,15 @@ const UnidadesModal = ({ visible, form, onClose, onSave, unidad }) => {
 
   return (
     <Modal
-      title={unidad ? 'Editar Unidad' : 'Nueva Unidad'}
+      title={estadoComprobante ? 'Editar Estado Comprobante' : 'Nuevo Estado Comprobante'}
       open={visible}
       onCancel={onClose}
       onOk={handleSubmit}
       okText="Guardar"
       cancelText="Cancelar"
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical"
+      >
         <Form.Item
           name="codigo"
           label="Código"
@@ -57,13 +59,12 @@ const UnidadesModal = ({ visible, form, onClose, onSave, unidad }) => {
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
           />
         </Form.Item>
-        
         <Form.Item
-          name="nombre"
-          label="Nombre"
+          name="descripcion"
+          label="Descripción"
           rules={[
-            { required: true, message: 'Por favor ingrese el nombre' },
-            { max: 50, message: 'El nombre debe tener máximo 50 caracteres' }
+            { required: true, message: 'Por favor ingrese la descripción' },
+            { max: 50, message: 'La descripción debe tener máximo 50 caracteres' }
           ]}
         >
           <Input
@@ -71,17 +72,18 @@ const UnidadesModal = ({ visible, form, onClose, onSave, unidad }) => {
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
           />
         </Form.Item>
+
       </Form>
     </Modal>
   );
 };
 
-UnidadesModal.propTypes = {
+ModalComprobantes.propTypes = {
   visible: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   form: PropTypes.object.isRequired,
-  unidad: PropTypes.object,
+  estadoComprobante: PropTypes.object,
 };
 
-export default UnidadesModal;
+export default ModalComprobantes;

@@ -36,6 +36,7 @@ const VentasFast = () => {
   const [selectedTipoDocumento, setSelectedTipoDocumento] = useState("");
   const [stockPollo, setStockPollo] = useState(0);
   const [codigoProductoVenta, setCodigoProductoVenta] = useState("POLLOSAC");
+  const [tara, setTara] = useState(0);
   const [cliente, setCliente] = useState({
     id: 0,
     documento: "",
@@ -71,7 +72,7 @@ const VentasFast = () => {
   }, [userCode, sesionEmpId, sesionPuntoVentaId]);
   
   //console.log(selectedsPaymentMethod);
-  const { fetchComprobantes, fetchSeries, handleSerieChange, debouncedFetchProducts, fetchMonedas, fetchGuardarVenta, fetchPaymentMethods, fetchTipoDocumentos, fetchClientes, fetchVentasEstados, fetchComprobante, buildResponseVenta, handleStockPollo } = useVentasFast({
+  const { fetchComprobantes, fetchSeries, handleSerieChange, debouncedFetchProducts, fetchMonedas, fetchGuardarVenta, fetchPaymentMethods, fetchTipoDocumentos, fetchClientes, fetchVentasEstados, fetchComprobante, buildRequestVenta, handleStockPollo } = useVentasFast({
     setComprobantes,
     setSeries,
     setNumero,
@@ -153,7 +154,7 @@ useEffect(() => {
         });
         return;
       }
-      const requestDTO = buildResponseVenta(formData,details,cliente,selectedMoneda,selectedsPaymentMethod, numero);
+      const requestDTO = buildRequestVenta(formData,details,cliente,selectedMoneda,selectedsPaymentMethod, numero);
       const ventaGuardadaId = await fetchGuardarVenta(requestDTO);
       if (ventaGuardadaId) {
         Swal.fire({
@@ -235,6 +236,7 @@ useEffect(() => {
     setCodigoProducto(product.codigo);
     let total = product.precio * product.peso;
     let cantidadPollo  = 1 * product.capacidadEnvase; // cantidad detalle * capacidad Envase
+
     setSelectedProduct({
       id: product.id, 
       idEnvase: product.envaseId,
@@ -249,7 +251,9 @@ useEffect(() => {
       precioUnitario: product.precioVenta, // Puedes dejarlo en 0 o calcularlo según sea necesario
       descuento: 0, // Descuento inicial
       totalProducto: total,
+      tara: product.tara,
     });
+    setTara(product.tara);
 
     setProducts([]); // Limpiar la lista de productos después de seleccionar uno
   };  
@@ -313,7 +317,9 @@ useEffect(() => {
       precioUnitario: 0, // Puedes dejarlo en 0 o calcularlo según sea necesario
       descuento: 0, // Descuento inicial
       totalProducto: 0,
+      tara: 0,
     });
+    setTara(0);
   };
   const handleDetailChange = (e, name) => {
     e.preventDefault();
@@ -339,13 +345,16 @@ useEffect(() => {
     setSelectedProduct((prev) => {
       
       const updatedProduct = { ...prev, [name]: value };
-      if(name === "cantidad"){
-        updatedProduct.cantidadPollo = updatedProduct.cantidad * updatedProduct.capacidadEnvase;
-      }
       // Si el campo cambiado es 'cantidad', 'precioUnitario' o 'descuento', recalculamos el total
-      if (name === "peso" || name === "precioUnitario" || name === "descuento") {
-        const total = (parseFloat(updatedProduct.peso) || 0) * (parseFloat(updatedProduct.precioUnitario) || 0) - (parseFloat(updatedProduct.descuento) || 0);
-        updatedProduct.totalProducto = total;
+      if (name === "peso" || name === "precioUnitario" || name === "descuento" || name === "cantidad") {
+
+        let cantidad = parseInt(updatedProduct.cantidad);   
+        updatedProduct.cantidadPollo = cantidad * updatedProduct.capacidadEnvase;
+        updatedProduct.tara = cantidad * tara;
+        
+        let pesoFinal = (parseFloat(updatedProduct.peso) || 0) - (parseFloat(updatedProduct.tara) || 0);
+        const total = (pesoFinal * (parseFloat(updatedProduct.precioUnitario) || 0)) - (parseFloat(updatedProduct.descuento) || 0);
+        updatedProduct.totalProducto = Math.round(total * 100) / 100;
       }
       return updatedProduct;
     });
@@ -383,8 +392,27 @@ useEffect(() => {
         setLoading(false);
       }
     };
-    // Maneja el cambio en el input de número de documento
+    // Maneja el cambio en el input de número de documento 
     const handleInputChangeCliente = (value,name) => {
+      if (name === 'numeroDocumento') {
+        // Validar si el tipoDocumento en el estado actual es 'DNI'
+        if(selectedTipoDocumento === 'DNI' && value.length > 8){
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "El número de documento no puede tener más de 8 caracteres para DNI.",
+          });
+          return;
+        }
+        if(selectedTipoDocumento === 'RUC' && value.length > 11){
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "El número de documento no puede tener más de 11 caracteres para RUC.",
+          });
+          return;
+        }
+      }
       setCliente((prev) => ({
         ...prev,
         [name]: value
@@ -437,38 +465,38 @@ useEffect(() => {
   
 
   return (
-    <div className="relative grid grid-cols-1 gap-2 md:grid-cols-2 rounded-lg dark:bg-transparent bg-transparent border  shadow-md  p-0 z-10 overflow-auto h-full text-sm">
+    <div className="relative grid grid-cols-1 gap-2 md:grid-cols-5 rounded-lg dark:bg-transparent bg-transparent border  shadow-md  p-0 z-10 overflow-auto h-full text-sm">
       {/* segundo div */}
       {/* Loader */}
       {loading && (
-        <div className="absolute inset-0 flex justify-center items-center bg-white bg-opacity-70 z-20 h-full">
+        <div className="absolute top-0 left-0 w-full min-h-screen flex justify-center items-center bg-white bg-opacity-70 z-20">
           <ClipLoader color="#36D7B7" loading={loading} size={50} />
         </div>
       )}
       {/* Modal para mostrar el PDF */}
       {comprobanteBase64 && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
-          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full p-4 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 h-full">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full p-4 relative h-[calc(100%-4rem)]">
             <iframe
               src={`data:application/pdf;base64,${comprobanteBase64}`}
               title="Comprobante PDF"
-              className="w-full h-96"
+              className="w-full h-[calc(100%-1rem)] rounded-lg bottom-0"
             />
             <button
               onClick={resetForm}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full px-4 py-2 hover:bg-red-600"
+              className="absolute bottom-1 right-1 bg-red-500 text-white rounded-full px-4 py-2 hover:bg-red-600"
             >
               Cerrar
             </button>
           </div>
         </div>
       )}
-      <div className="relative font-semibold bg-white dark:bg-gray-900 dark:bg-opacity-85 bg-opacity-85 p-4 rounded-lg md:overflow-auto md:max-h-screen h-auto">
+      <div className="relative col-span-3 font-semibold bg-white dark:bg-gray-900 dark:bg-opacity-85 bg-opacity-85 p-4 rounded-lg md:overflow-auto md:max-h-screen h-auto">
         {/* Detalles del Producto */}
         <h1 className="text-2xl font-bold mb-4 dark:text-white">
           Punto de Venta
         </h1>
-        <div className="grid grid-cols-3 gap-6 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
           <div className="col-span-1">
             <TextInput
               text={stockPollo}
@@ -478,7 +506,7 @@ useEffect(() => {
               disabled={true}
             />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1">
             <TextAreaInput
               text={codigoProductoVenta}
               setText={(value) => setCodigoProductoVenta(value)}
@@ -487,9 +515,7 @@ useEffect(() => {
               disabled={true}
             />
           </div>
-        </div>
-        <div className="grid grid-cols-3 gap-6 mb-4">
-          <div className="col-span-2">
+          <div className="col-span-1">
             <SelectInput
                 value={formData.estado}
                 setValue={(value) => handleInputChange(value, "estado")}
@@ -497,6 +523,8 @@ useEffect(() => {
                 placeholder="Estado"
               />
           </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
           <div className="col-span-1">
             <SelectInput
                 value={formData.vendedor}
@@ -505,7 +533,7 @@ useEffect(() => {
                 placeholder="Vendedor"
               />
           </div>
-          <div className="col-span-3">
+          <div className="col-span-1 sm:col-span-2">
             <TextInput
               text={formData.observaciones}
               setText={(value) => handleInputChange(value, "observaciones")}
@@ -515,7 +543,7 @@ useEffect(() => {
           </div>
         </div>
         {/* Producto */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
           <div className="col-span-1">
             <TextInput
                 text={codigoProducto}
@@ -525,7 +553,7 @@ useEffect(() => {
                 disabled={true}
               />
           </div>
-          <div className="col-span-2 relative">
+          <div className="col-span-1 sm:col-span-2 relative">
             <TextAreaInput
               text={descripcionProducto}
               setText={handleDescripcionChange}
@@ -553,9 +581,10 @@ useEffect(() => {
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th className="px-2 py-2 border-b">Unidad</th>
-                <th className="px-2 py-2 border-b">Cantidad Pollo</th>
+                <th className="px-2 py-2 border-b">Cant. Pollo</th>
                 <th className="px-2 py-2 border-b">Cantidad</th>
-                <th className="px-2 py-2 border-b">Peso</th>
+                <th className="px-2 py-2 border-b">Peso Total</th>
+                <th className="px-2 py-2 border-b">Tara Total</th>
                 <th className="px-2 py-2 border-b">Precio Unit</th>
                 <th className="px-2 py-2 border-b">Desc</th>
                 <th className="px-2 py-2 border-b">Importe Total</th>
@@ -571,7 +600,7 @@ useEffect(() => {
                       name="unidad"
                       value={selectedProduct.unidad}
                       onChange={(value) => handleDetailChange(value, "unidad")}
-                      className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                      className="w-14 h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                       disabled
                     />
                   </td>
@@ -581,7 +610,7 @@ useEffect(() => {
                       name="cantidad Pollo"
                       value={selectedProduct.cantidadPollo}
                       onChange={(value) => handleDetailChange(value, "cantidadPollo")}
-                      className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                      className="w-16 h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                       disabled
                     />
                   </td>
@@ -591,7 +620,7 @@ useEffect(() => {
                       name="cantidad"
                       value={selectedProduct.cantidad}
                       onChange={(value) => handleDetailChange(value, "cantidad")}
-                      className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                      className="w-16 h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                     />
                   </td>
 
@@ -601,7 +630,17 @@ useEffect(() => {
                       name="peso"
                       value={selectedProduct.peso}
                       onChange={(value) => handleDetailChange(value, "peso")}
-                      className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                      className="w-16 h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                    />
+                  </td>
+                  <td className="px-1 py-2 border-b">
+                    <input
+                      type="number"
+                      name="tara"
+                      value={selectedProduct.tara}
+                      onChange={(value) => handleDetailChange(value, "tara")}
+                      className="w-14 h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                      disabled
                     />
                   </td>
                   <td className="px-1 py-2 border-b">
@@ -610,7 +649,7 @@ useEffect(() => {
                       name="precioUnitario"
                       value={selectedProduct.precioUnitario}
                       onChange={(value) => handleDetailChange(value, "precioUnitario")}
-                      className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                      className="w-16 h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                     />
                   </td>
                   <td className="px-1 py-2 border-b">
@@ -619,7 +658,7 @@ useEffect(() => {
                       name="descuento"
                       value={selectedProduct.descuento}
                       onChange={(value) => handleDetailChange(value, "descuento")}
-                      className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
+                      className="w-16 h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                     />
                   </td>
                   <td className="px-1 py-2 border-b">
@@ -628,7 +667,6 @@ useEffect(() => {
                       name="totalProducto"
                       value={selectedProduct.totalProducto}
                       onChange={(value) => handleDetailChange(value, "totalProducto")}
-                      //onBlur={handleCalculateTotal}
                       className="w-full h-8 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 rounded-md"
                       disabled
                     />
@@ -656,6 +694,7 @@ useEffect(() => {
                 <th className="px-2 py-2 border-b">Cantidad Pollo</th>
                 <th className="px-2 py-2 border-b">Cantidad</th>
                 <th className="px-2 py-2 border-b">Peso</th>
+                <th className="px-2 py-2 border-b">Tara</th>
                 <th className="px-2 py-2 border-b">Precio Unit</th>
                 <th className="px-2 py-2 border-b">Descuento</th>
                 <th className="px-2 py-2 border-b">Total</th>
@@ -674,6 +713,7 @@ useEffect(() => {
                   <td className="px-2 py-2 border-b">{detail.cantidadPollo}</td>
                   <td className="px-2 py-2 border-b">{detail.cantidad}</td>
                   <td className="px-2 py-2 border-b">{detail.peso}</td>
+                  <td className="px-2 py-2 border-b">{detail.tara}</td>
                   <td className="px-2 py-2 border-b">{detail.precioUnitario}</td>
                   <td className="px-2 py-2 border-b">{detail.descuento}</td>
                   <td className="px-2 py-2 border-b">{detail.totalProducto}</td>
@@ -694,9 +734,9 @@ useEffect(() => {
           </table>
         </div>
       </div>
-      <div className="relative font-semibold bg-white dark:bg-gray-900 dark:bg-opacity-85 bg-opacity-85 p-4 rounded-lg md:overflow-auto md:max-h-screen h-auto">
+      <div className="relative col-span-2 font-semibold bg-white dark:bg-gray-900 dark:bg-opacity-85 bg-opacity-85 p-4 rounded-lg md:overflow-auto md:max-h-screen h-auto">
         {/* Información del Comprobante */}
-        <div className="grid grid-cols-4 gap-6 mb-4 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-4 mt-2">
           <div>
             <SelectInput
               value={formData.comprobante}
@@ -713,7 +753,7 @@ useEffect(() => {
               placeholder="Serie"
             />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <TextInput
               text={formData.fecha}
               setText={(value) => handleInputChange(value, "fecha")}
@@ -721,7 +761,9 @@ useEffect(() => {
               typeInput="date"
             />
           </div>
-          <div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
+          <div className="col-span-1">
             <TextInput
               text={numero} // Aquí se muestra el número de serie obtenido
               setText={(value) => handleInputChange(value, "numero")}
@@ -730,7 +772,7 @@ useEffect(() => {
               disabled={true} // Este campo puede estar deshabilitado si el número no debe ser editado manualmente
             />
           </div>
-          <div>
+          <div className="col-span-1">
             <SelectInput
               value={selectedMoneda} // Valor seleccionado
               setValue={handleMonedaChange} // Manejador del cambio
@@ -738,7 +780,7 @@ useEffect(() => {
               placeholder="Moneda"
             />
           </div>
-          <div>
+          <div className="col-span-1">
             <TextInput
               text={formData.tipoCambio}
               setText={(value) => handleInputChange(value, "tipoCambio")}
@@ -747,7 +789,10 @@ useEffect(() => {
               disabled={true}
             />
           </div>
-          <div>
+        </div>
+        {/* Información del Cliente */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
+          <div className="col-span-1">
             <SelectInput
               value={selectedTipoDocumento}
               setValue={handleTipoDocumentoChange}
@@ -755,10 +800,7 @@ useEffect(() => {
               placeholder="Tipo DOC"
             />
           </div>
-        </div>
-        {/* Información del Cliente */}
-        <div className="grid grid-cols-3 gap-6 mb-4">
-          <div className="flex flex-row items-center space-x-2">
+          <div className="flex flex-row items-center space-x-2 col-span-1 sm:col-span-2">
             <div className="flex-grow"> {/* El TextInput ocupa 3/4 del espacio */}
               <TextInput
                 name="documento" // Add name attribute
@@ -789,7 +831,7 @@ useEffect(() => {
             )}
           </div>
 
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-3">
             <TextInput
               name="nombre" // Add name attribute
               text={cliente.nombre}
@@ -799,7 +841,7 @@ useEffect(() => {
             />
           </div>
 
-          <div className="col-span-3">
+          <div className="col-span-1 sm:col-span-3">
             <TextInput
               name="direccion" // Add name attribute
               text={cliente.direccion}
@@ -810,7 +852,7 @@ useEffect(() => {
           </div>
         </div>
         {/* Subtotal, Impuesto y Total */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
           <div className="flex flex-row">
             <span className="mr-2">{selectedMoneda === "DOL" ? "$" : "S/"}</span>
             <TextInput
@@ -843,7 +885,7 @@ useEffect(() => {
           </div>
         </div>
         {/* Forma de Pago */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
             {paymentMethods.length > 0 ? (
               <MetodosPagos 
                 formData={formData} 
@@ -867,7 +909,7 @@ useEffect(() => {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-6 mb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-2">
           <CustomButton 
             placeholder="Guardar" 
             onClick={handleSave} 

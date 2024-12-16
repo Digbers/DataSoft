@@ -31,7 +31,8 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
         comprobantesComprasDetalle: details.map((detail, index) => ({
           numero: index + 1,
           cantidad: detail.cantidad,
-          idProducto: detail.idProducto,
+          descripcion: detail.descripcionA,
+          idProducto: detail.id,
           idEnvase: detail.idEnvase,
           peso: detail.peso,
           precioUnitario: detail.precioUnitario,
@@ -61,8 +62,8 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
         descripcion: "",
         moneda: selectedMoneda?.codigo || "SOL",
         usuarioCreacion: formData.usuarioCreacion,
-      }] : [],
-      codigoProductoCompra: "POLLOSAC"
+      }] : []
+      //codigoProductoCompra: "POLLOSAC"
     };
     console.log(requestDTO);
     return requestDTO;

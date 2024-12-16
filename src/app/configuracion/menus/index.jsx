@@ -136,30 +136,41 @@ const ConfiguracionMenus = ({onPermisosGuardados}) => {
       </div>
 
       {/* Renderizado de menús y submenús */}
-      <div className="menu-list mt-4 rounded-lg dark:bg-transparent bg-transparent border shadow-md md:px-40 lg:px-80 px-2">
-        {menus.map((menu) => (
-          <div key={menu.id} data-menu-id={menu.id} className="menu-item mb-4 p-4 rounded-lg shadow-lg bg-gray-100 dark:bg-gray-800">
-            <h3 className="menu-name text-lg font-semibold flex items-center">
-              <i className={`fa ${menu.icon} mr-2`}></i>
-              {menu.menuName}
-            </h3>
-            <ul className="submenu-list ml-4 mt-2">
-              {menu.submenus.map((submenu) => (
-                <li key={submenu.id} data-submenu-id={submenu.id} className="submenu-item flex items-center justify-between p-2">
-                  <div className="flex items-center">
-                    <i className={`fa ${submenu.icon} mr-2`}></i>
-                    <span>{submenu.menuName}</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={submenu.menuDisponible}
-                    onChange={() => toggleMenuDisponible(menu.id, submenu.id)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+      <div className="menu-list mt-4 rounded-lg dark:bg-transparent bg-transparent border shadow-md md:px-10 lg:px-40 px-2">
+        <div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-2 lg:gap-8">
+          {menus.map((menu) => (
+            <div
+              key={menu.id}
+              data-menu-id={menu.id}
+              className="menu-item p-4 rounded-lg shadow-lg bg-gray-100 dark:bg-gray-800"
+            >
+              <h3 className="menu-name text-lg font-semibold flex items-center">
+                <i className={`fa ${menu.icon} mr-2`}></i>
+                {menu.menuName}
+              </h3>
+              <ul className="submenu-list ml-4 mt-2">
+                {menu.submenus.map((submenu) => (
+                  <li
+                    key={submenu.id}
+                    data-submenu-id={submenu.id}
+                    className="submenu-item flex items-center justify-between p-2"
+                  >
+                    <div className="flex items-center">
+                      <i className={`fa ${submenu.icon} mr-2`}></i>
+                      <span>{submenu.menuName}</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={submenu.menuDisponible}
+                      onChange={() => toggleMenuDisponible(menu.id, submenu.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
         {/* Botón de guardar */}
         <div className="mt-4 flex justify-end">
           <button
@@ -171,6 +182,7 @@ const ConfiguracionMenus = ({onPermisosGuardados}) => {
           </button>
         </div>
       </div>
+
     </div>
   );
 };

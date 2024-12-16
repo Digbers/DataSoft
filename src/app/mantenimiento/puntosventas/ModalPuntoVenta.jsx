@@ -8,7 +8,7 @@ const ModalPuntoVenta = ({ visible, form, onClose, onSave, puntoVenta, almacenes
   // Cargar los valores de la moneda en el formulario si estamos editando
   useEffect(() => {
     if (puntoVenta) {
-      console.log(puntoVenta);
+      //console.log(puntoVenta);
       form.setFieldsValue(puntoVenta);
     } else {
       form.resetFields();

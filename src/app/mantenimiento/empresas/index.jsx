@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, message, Popconfirm, Form, Input } from 'antd';
+import { Table, Button, message, Popconfirm, Form, Input, Checkbox } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import { useAuth } from '../../../context/AuthContext';
 import ModalEmpresas from './ModalEmpresas';
@@ -10,8 +10,9 @@ const TablaEmpresas = () => {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [editingEmpresa, setEditingEmpresa] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const { sesionEmpId, userCode } = useAuth();
+  const { sesionEmpId } = useAuth();
   const [form] = Form.useForm();
+  const [file, setFile] = useState(null);
   
   
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
@@ -82,35 +83,40 @@ const TablaEmpresas = () => {
   // Guardar cambios en el modal
   const handleSave = async (values) => {
     try {
-      const empresaRequest = {
-        id: editingEmpresa ? editingEmpresa.id : null,
-        razonSocial: values.razonSocial,
-        empresaCodigo: values.empresaCodigo,
-        ruc: values.ruc,
-        direccion: values.direccion,
-        departamento: values.departamento,
-        provincia: values.provincia,
-        distrito: values.distrito,
-        ubigeo: values.ubigeo,
-        telefono: values.telefono,
-        celular: values.celular,
-        correo: values.correo,
-        web: values.web,
-        logo: values.logo,
-        estado: values.estado,
-        idEmpresa: sesionEmpId,
-        usuarioCreacion: userCode,
-        usuarioActualizacion: editingEmpresa ? userCode : null
-      };
-      
-      if (editingEmpresa) {
-        await axios.patch(`http://localhost:8080/api/empresas/update/${editingEmpresa.id}`, empresaRequest);
-        message.success('Empresa actualizada exitosamente');
-      } else {
-        await axios.post(`http://localhost:8080/api/empresas/save`, empresaRequest);
-        message.success('Empresa creada exitosamente');
+      const formData = new FormData();
+    
+      // Handle the file separately
+      const { logo, ...empresaData } = values;
+
+      formData.append('empresa', JSON.stringify(empresaData));
+
+      // Check and append the logo
+      if (logo && logo.file instanceof File) {
+        console.log(logo.file);
+          formData.append('logo', logo.file);
       }
-      
+
+      const config = {
+          headers: {
+              "Content-Type": "multipart/form-data",
+          },
+      };
+    
+      if (editingEmpresa) {
+          await axios.put(
+              `http://localhost:8080/api/empresas/update/${editingEmpresa.id}`,
+              formData,
+              config
+          );
+          message.success("Empresa actualizada exitosamente");
+      } else {
+          await axios.post(
+              `http://localhost:8080/api/empresas/save`,
+              formData,
+              config
+          );
+          message.success("Empresa creada exitosamente");
+      }
       setModalVisible(false);
       form.resetFields();
       fetchData(pagination);
@@ -585,6 +591,13 @@ const TablaEmpresas = () => {
         dataIndex: 'estado',
         sorter: true,
         filterSearch: true,
+        render: (estado) => {
+          if (estado === true) {
+            return <Checkbox checked={estado} />;
+          } else {
+            return <Checkbox />;
+          }
+        },
         className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
         filterDropdown: ({
           setSelectedKeys, selectedKeys, confirm, clearFilters,
@@ -616,6 +629,25 @@ const TablaEmpresas = () => {
             </Button>
           </div>
         ),
+    },
+    {
+      title: 'Logo',
+      dataIndex: 'logo',
+      sorter: true,
+      filterSearch: true,
+      render: (logo) => {
+        return logo ? (
+          <img 
+            src={logo} 
+            alt="Logo de la empresa" 
+            style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '5px' }} 
+          />
+        ) : (
+          <span>Sin logo</span>
+        );
+        
+      },
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
       title: 'Acciones',
@@ -683,6 +715,8 @@ const TablaEmpresas = () => {
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         empresa={editingEmpresa}
+        file={file}
+        setFile={setFile}
       />
     </div>
   );

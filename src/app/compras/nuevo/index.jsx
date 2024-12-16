@@ -20,9 +20,9 @@ const CompraNuevo = () => {
   const [estados, setEstados] = useState([]);
   const [comprobantes, setComprobantes] = useState([]);
   const [details, setDetails] = useState([]);
-  const [selectedMoneda, setSelectedMoneda] = useState({});
+  const [selectedMoneda, setSelectedMoneda] = useState("");
   const [tipoDocumentos, setTipoDocumentos] = useState([]);
-  const [selectedTipoDocumento, setSelectedTipoDocumento] = useState({});
+  const [selectedTipoDocumento, setSelectedTipoDocumento] = useState("");
   const [stockPollo, setStockPollo] = useState(0);
   const [codigoProductoVenta, setCodigoProductoVenta] = useState("POLLOSAC");
   const [proveedor, setProveedor] = useState({
@@ -79,7 +79,7 @@ const CompraNuevo = () => {
     }
   }, [userCode, sesionEmpId, sesionPuntoVentaId]);
 
-  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, handleStockPollo, buildResponseCompra, fetchGuardarCompra } = useCompras({
+  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, handleStockPollo, buildRequestCompra, fetchGuardarCompra } = useCompras({
     setComprobantes,
     setProducts,
     setMonedas,
@@ -103,6 +103,7 @@ useEffect(() => {
         // Cargar las monedas, métodos de pago y tipos de documentos
         const moneda = await fetchMonedas(sesionEmpId);
         setSelectedMoneda(moneda);
+        console.log(moneda);
         const tipoDocumento = await fetchTipoDocumentos(sesionEmpId);
         setSelectedTipoDocumento(tipoDocumento);
         const estado = await fetchComprasEstados(sesionEmpId);
@@ -150,7 +151,7 @@ useEffect(() => {
         return; // Detener la ejecución si falta algún campo
       } 
       // Puedes agregar más validaciones si es necesario antes de guardar
-      const requestDTO = buildResponseCompra(formData,details,proveedor,selectedMoneda);
+      const requestDTO = buildRequestCompra(formData,details,proveedor,selectedMoneda);
       const ventaGuardadaId = await fetchGuardarCompra(requestDTO);
       if (ventaGuardadaId) {
         Swal.fire({
@@ -306,7 +307,26 @@ useEffect(() => {
       setLoading(false);
     };
     // Maneja el cambio en el input de número de documento
-    const handleInputChangeCliente = (value,name) => {
+    const handleInputChangeProveedor = (value,name) => {
+      if (name === 'numeroDocumento') {
+        // Validar si el tipoDocumento en el estado actual es 'DNI'
+        if(selectedTipoDocumento === 'DNI' && value.length > 8){
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "El número de documento no puede tener más de 8 caracteres para DNI.",
+          });
+          return;
+        }
+        if(selectedTipoDocumento === 'RUC' && value.length > 11){
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "El número de documento no puede tener más de 11 caracteres para RUC.",
+          });
+          return;
+        }
+      }
       setProveedor((prev) => ({
         ...prev,
         [name]: value
@@ -315,7 +335,7 @@ useEffect(() => {
     // Maneja la presión de teclas para el input del documento
     const handleKeyDown = (e) => {
       if (e.key === "Enter") {
-        handleClienteChange(proveedor.documento);
+        handleClienteChange(proveedor.numeroDocumento);
       }
     };
     const resetForm = () => {
@@ -374,61 +394,80 @@ useEffect(() => {
       });
     };
     // Crear refs para cada campo importante
-    const comprobanteRef = useRef(null);
     const serieRef = useRef(null);
     const numeroRef = useRef(null);
     const fechaRef = useRef(null);
     const totalRef = useRef(null);
 
     const validateFields = () => {
-      const missingFields = [];
-
-      if (!formData.comprobante || formData.comprobante === "") {
-        missingFields.push("Comprobante");
-        comprobanteRef.current?.focus();
-        return false;
-      }
+      const missingFields = []; 
       if (!formData.serie || formData.serie === "") {
         missingFields.push("Serie");
         serieRef.current?.focus();
+        console.log(formData.serie);
+        Swal.fire({
+          icon: "warning",
+          title: "Ingrese Serie",
+          text: `Por favor, ingrese la serie.`,
+        });
         return false;
       }
       if (!formData.numero || formData.numero === "") {
         missingFields.push("Número");
         numeroRef.current?.focus();
+        console.log(formData.numero);
+        Swal.fire({
+          icon: "warning",
+          title: "Ingrese Número",
+          text: `Por favor, ingrese el número.`,
+        });
         return false;
       }
       if (!formData.fecha || formData.fecha === "") {
         missingFields.push("Fecha de Emisión");
         fechaRef.current?.focus();
+        console.log(formData.fecha);
+        Swal.fire({
+          icon: "warning",
+          title: "Ingrese Fecha de Emisión",
+          text: `Por favor, ingrese la fecha de emisión.`,
+        });
         return false;
       }
       if (!formData.total || formData.total === 0) {
         missingFields.push("Total");
         totalRef.current?.focus();
+        console.log(formData.total);
+        Swal.fire({
+          icon: "warning",
+          title: "Ingrese Total",
+          text: `Por favor, ingrese el total.`,
+        });
         return false;
       }
       if (!proveedor.id || proveedor.id === 0) {
         missingFields.push("ID del Proveedor");
-        return false;
-      }
-      if (!selectedMoneda || !selectedMoneda.codigo || selectedMoneda.codigo === "") {
-        missingFields.push("Código de Moneda");
-        return false;
-      }
-
-      if (missingFields.length > 0) {
+        console.log(proveedor.id);
         Swal.fire({
           icon: "warning",
-          title: "Campos faltantes",
-          text: `Por favor, completa los siguientes campos: ${missingFields.join(", ")}.`,
+          title: "Ingrese ID del Proveedor",
+          text: `Por favor, ingrese el ID del proveedor.`,
+        });
+        return false;
+      }
+      if (selectedMoneda === "") {
+        missingFields.push("Código de Moneda");
+        console.log(selectedMoneda.codigo);
+        Swal.fire({
+          icon: "warning",
+          title: "Ingrese Código de Moneda",
+          text: `Por favor, ingrese el código de moneda.`,
         });
         return false;
       }
 
       return true;
     }
-      
 
   return (
     <div className="relative grid grid-cols-1 gap-1 rounded-lg dark:bg-transparent bg-transparent border  shadow-md  p-0 z-10 overflow-auto h-full text-sm">
@@ -444,10 +483,9 @@ useEffect(() => {
           Nueva Compra
         </h1>
         {/* Información del Comprobante */}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:grid-cols-6 md:gap-6 mb-4 mt-2">
           <div>
             <SelectInput
-              ref={comprobanteRef}
               value={formData.comprobante}
               setValue={handleComprobanteChange}
               options={comprobantes}
@@ -501,8 +539,8 @@ useEffect(() => {
           </div>
         </div>
         {/* Información del proveedor */}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:grid-cols-6 md:gap-6 mb-4">
+          <div className="col-span-1">
             <SelectInput
               value={selectedTipoDocumento}
               setValue={handleTipoDocumentoChange}
@@ -510,28 +548,28 @@ useEffect(() => {
               placeholder="Tipo DOC"
             />
           </div>
-          <div>
+          <div className="col-span-1">
             <TextInput
               name="documento" // Add name attribute
               text={proveedor.numeroDocumento}
-              setText={(value) => handleInputChangeCliente(value, "numeroDocumento")}
+              setText={(value) => handleInputChangeProveedor(value, "numeroDocumento")}
               placeholder="N° Documento"
               typeInput="text"
               onKeyDown={handleKeyDown} // Add onKeyDown handler
             />
           </div>
 
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <TextInput
               name="nombre" // Add name attribute
               text={proveedor.nombre}
-              setText={(value) => handleInputChangeCliente(value, "nombre")}
+              setText={(value) => handleInputChangeProveedor(value, "nombre")}
               placeholder="Nombre"
               typeInput="text"
             />
           </div>
           {/* Separate div for the checkbox input */}
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -543,8 +581,8 @@ useEffect(() => {
           </div>
         </div>
         {/* estado y fechas*/}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
-          <div className="">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:grid-cols-6 md:gap-6 mb-4">
+          <div className="col-span-1">
             <SelectInput
                 value={formData.estado}
                 setValue={(value) => handleInputChange(value, "estado")}
@@ -552,7 +590,7 @@ useEffect(() => {
                 placeholder="Estado"
               />
           </div>
-          <div>
+          <div className="col-span-1">
             <TextInput
               text={formData.fechaIngreso}
               setText={(value) => handleInputChange(value, "fechaIngreso")}
@@ -560,7 +598,7 @@ useEffect(() => {
               typeInput="date"
             />
           </div>
-          <div>
+          <div className="col-span-1">
             <TextInput
               text={formData.periodoRegistro}
               setText={(value) => handleInputChange(value, "periodoRegistro")}
@@ -568,7 +606,7 @@ useEffect(() => {
               typeInput="month"
             />
           </div>
-          <div>
+          <div className="col-span-1">
             <TextInput
               text={formData.fechaVencimiento}
               setText={(value) => handleInputChange(value, "fechaVencimiento")}
@@ -576,7 +614,7 @@ useEffect(() => {
               typeInput="date"
             />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <TextInput
               text={formData.observaciones}
               setText={(value) => handleInputChange(value, "observaciones")}
@@ -592,7 +630,7 @@ useEffect(() => {
           Detalles
         </h1>
         {/* Producto */}
-        <div className="grid grid-cols-4 gap-2 md:grid-cols-6 md:gap-6 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:grid-cols-6 md:gap-6 mb-4">
           <div className="">
             <TextInput
               text={stockPollo}

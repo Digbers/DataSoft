@@ -10,6 +10,7 @@ import useFetchData from '../../../hooks/useFetchData';
 
 const ComprobantesTable = () => {
   const [comprobantes, setComprobantes] = useState([]);
+  const [comprobanteBase64, setComprobanteBase64] = useState(""); // Estado para el comprobante
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [editingComprobante, setEditingComprobante] = useState(null);
@@ -87,6 +88,17 @@ const ComprobantesTable = () => {
       setLoading(false);
     }
   };
+  const fetchComprobante = async (idComprobante) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/ventas/get-comprobante/${idComprobante}`, {
+        responseType: 'text' // Ensures Base64 string is received as plain text
+      });
+      setComprobanteBase64(response.data); // Return Base64 content for setting state
+    } catch (error) {
+      console.error("Error fetching comprobante:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     fetchData(pagination);
@@ -134,87 +146,13 @@ const ComprobantesTable = () => {
   const handleView = (record) => {
     console.log(record);
     setEditingComprobante(record);
+    setModalVisible(true);
   };
   const handleAnular = (record) => {
     console.log(record);
     console.log(userCode);
   };
 
-
-  // Abrir el modal de edición
-  /*
-  const handleEdit = (record) => {
-    const tipo = comprobantesTipos.find(t => t.value === record.tipo.codigo); // Mapea el tipo al valor correcto
-    const moneda = monedas.find(m => m.value === record.monedaCodigo); // Mapea la moneda al valor correcto
-    const estado = estados.find(e => e.value === record.estadoCodigo); // Mapea el estado al valor correcto
-    setEditingComprobante(record);
-    //form.setFieldsValue(record); 
-    console.log(record);
-    form.setFieldsValue({
-      ...record,  // Mantiene los valores actuales del resto de los campos
-      tipo: tipo ? tipo.value : null,  // Asigna el value del tipo encontrado
-      moneda: moneda ? moneda.value : null,  // Asigna el value de la moneda encontrada
-      estado: estado ? estado.value : null,  // Asigna el value del estado encontrado
-    });
-    setModalVisible(true);
-  };
-  // Abrir el modal de agregar
-  const handleAdd = () => {
-    setEditingComprobante(null);
-    form.resetFields();
-    setModalVisible(true);
-  };*/
-  // Guardar cambios de edición
-  /*
-  const handleSave = async () => {
-    try {
-      // Validar los campos antes de guardar
-      const values = await form.validateFields();
-      //console.log(values);
-      const comprobanteRequest = {
-        idComprobante: editingComprobante ? editingComprobante.idComprobante : null,  // Si estamos editando, usamos el id existente
-        codigo: values.codigo,
-        nombre: values.nombre,
-        tipo: { codigo: values.tipo },  // Asignar el tipo como un objeto con el value
-        empresa: {id: sesionEmpId}, 
-        stockAlmacenId: editingComprobante ? editingComprobante.stockAlmacenId : null,
-        almacenId: editingComprobante ? editingComprobante.almacenId : sesionAlmacenId,
-        monedaCodigo: values.moneda,
-        estadoCodigo: values.estado,
-        fechaRegistro: null, 
-        fechaEmision: values.fechaEmision,
-        fechaVencimiento: values.fechaVencimiento,
-        numeroDoc: values.numeroDoc,
-        subtotal: values.subtotal,
-        impuesto: values.impuesto,
-        total: values.total,
-        precioSugerido: values.precioSugerido,
-        usuarioCreacion: userCode, 
-        usuarioActualizacion: editingComprobante ? userCode : null  
-      };
-      console.log(comprobanteRequest);
-  
-      if (editingComprobante) {
-        // Si editingProducto tiene valor, es una edición
-        await axios.patch(`http://localhost:8080/api/ventas/comprobantes/update/${editingComprobante.idComprobante}`, comprobanteRequest);
-        message.success('Comprobante actualizado exitosamente');
-      } else {
-        // Si no hay comprobante, es un nuevo comprobante
-        await axios.post(`http://localhost:8080/api/ventas/comprobantes/save`, comprobanteRequest);
-        message.success('Comprobante creado exitosamente');
-      }
-  
-      setModalVisible(false);
-      form.resetFields();
-      fetchData(pagination);  // Recargar datos de la tabla
-    } catch (error) {
-      if (error.name === 'ValidationError') {
-        message.error('Por favor complete todos los campos requeridos');
-      } else {
-        message.error(editingComprobante ? 'Error actualizando comprobante' : 'Error creando comprobante');
-      }
-    }
-  };*/
   const columns = [
     {
       title: 'Fecha de Emisión',
@@ -379,6 +317,7 @@ const ComprobantesTable = () => {
       render: (text, record) => (
         <>
           <Button onClick={() => handleView(record)} icon={<i className="fas fa-eye" />} />
+          <Button onClick={() => fetchComprobante(record.id)} icon={<i className="fas fa-file-pdf" />} />
           <Button onClick={() => handleAnular(record)} icon={<i className="fas fa-ban" />} danger />
         </>
       ),
@@ -418,7 +357,7 @@ const ComprobantesTable = () => {
       />
 
       {/* Conditionally render ProductoModal only when envases and tipos are loaded */}
-      {monedas.length > 0 && comprobantesTipos.length > 0 && estados.length > 0 &&  (
+      {monedas.length > 0 && comprobantesTipos.length > 0 && estados.length > 0 && (
         <ComprobanteModal
           visible={modalVisible}
           onCancel={() => setModalVisible(false)}
@@ -429,6 +368,23 @@ const ComprobantesTable = () => {
           comprobantesTipos={comprobantesTipos}
           estados={estados}
         />
+      )}
+      {comprobanteBase64 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 h-full">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full p-4 relative h-[calc(100%-4rem)]">
+            <iframe
+              src={`data:application/pdf;base64,${comprobanteBase64}`}
+              title="Comprobante PDF"
+              className="w-full h-[calc(100%-1rem)] rounded-lg bottom-0"
+            />
+            <button
+              onClick={() => setComprobanteBase64("")}
+              className="absolute bottom-1 right-1 bg-red-500 text-white rounded-full px-4 py-2 hover:bg-red-600"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

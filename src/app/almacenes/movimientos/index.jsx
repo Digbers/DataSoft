@@ -4,7 +4,7 @@ import axios from "../../../config/axiosConfig";
 import * as XLSX from 'xlsx';  // Para exportar a Excel
 import jsPDF from 'jspdf';     // Para exportar a PDF
 import 'jspdf-autotable'; 
-import MovimientosModal from './MovimientosModal.jsx';
+import MovimientoModal from './MovimientoModal.jsx';
 import { useAuth } from '../../../context/AuthContext';
 
 const MovimientosTable = () => {
@@ -99,9 +99,11 @@ const MovimientosTable = () => {
     });
     doc.save('movimientos.pdf');
   };
+  
   const handleView = (record) => {
     console.log(record);
     setSelectedMovimiento(record);
+    setModalVisible(true);
   };
 
   const columns = [
@@ -228,12 +230,13 @@ const MovimientosTable = () => {
         className='w-full text-sm text-left rtl:text-right text-gray-600 dark:text-gray-400'
         onChange={(pagination, filters, sorter) => fetchData(pagination, filters, sorter)}
       />
-        <MovimientosModal
+        <MovimientoModal
           visible={modalVisible}
           onCancel={() => setModalVisible(false)}
           form={form}
           movimiento={selectedMovimiento}
         />
+      
     </div>
   );
 };

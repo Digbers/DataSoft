@@ -1,46 +1,39 @@
 import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Row, Col, Table, message } from 'antd';
+import { Modal, Form, Input, Row, Col, Table, message } from 'antd';
 import axios from '../../../config/axiosConfig';
 
-const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, comprobantesTipos, estados }) => {
+const MovimientoModal = ({ visible, onCancel, form, movimiento }) => {
   const [detalle, setDetalle] = useState([]);
-
   // Cargar los detalles del comprobante
-  const fetchDetalle = async () => {
+  const fetchMovimientoDetalle = async (id) => {
     try {
-      const response = await axios.get(`http://localhost:8080/api/ventas/comprobantes/find-detalle/${comprobante.id}`);
+      const response = await axios.get(`http://localhost:8080/api/inventario/movimientos/find-detalle/${id}`);
       setDetalle(response.data);
-      console.log(response.data);
     } catch (error) {
-      console.error('Error fetching detalle:', error);
-      message.error('Error fetching detalle');
+      message.error('Error fetching movimiento detalle');
     }
   };
 
   useEffect(() => {
-    if (comprobante?.id) {
-      fetchDetalle();
-      console.log(comprobante);
-      console.log(comprobantesTipos)
+    if (movimiento?.id) {
+      fetchMovimientoDetalle(movimiento.id);
     }
-  }, [comprobante]);
+  }, [movimiento]);
 
   // Columnas para la tabla de detalles
   const detalleColumns = [
     { title: 'N°', dataIndex: 'numero', key: 'numero' },
     { title: 'Descripción', dataIndex: 'descripcion', key: 'descripcion' },
     { title: 'Cantidad', dataIndex: 'cantidad', key: 'cantidad' },
-    { title: 'Cantidad Pollo', dataIndex: 'cantidadPollo', key: 'cantidadPollo' },
     { title: 'Peso', dataIndex: 'peso', key: 'peso' },
     { title: 'Precio Unitario', dataIndex: 'precioUnitario', key: 'precioUnitario' },
     { title: 'Descuento', dataIndex: 'descuento', key: 'descuento' },
-    { title: 'Total', dataIndex: 'total', key: 'total' },
   ];
 
   return (
     <Modal
-      title={comprobante && comprobante.id ? `${comprobante.serie} - ${comprobante.numero} - ${comprobante.fechaEmision} - ${comprobante.nombreCliente}` : 'No existe el comprobante'}
+      title={movimiento && movimiento.id ? `${movimiento.serie} - ${movimiento.numero} - ${movimiento.fechaEmision} - ${movimiento.nombreCliente}` : 'No existe el movimiento'}
       open={visible}
       onCancel={onCancel}
       footer={null}
@@ -53,7 +46,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Fecha de Emisión</span>}>
               <Input 
-                value={comprobante?.fechaEmision || ''} 
+                value={movimiento?.fechaEmision || ''} 
                 disabled
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
@@ -62,7 +55,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Fecha de Vencimiento</span>}>
               <Input 
-                value={comprobante?.fechaVencimiento || ''} 
+                value={movimiento?.fechaVencimiento || ''} 
                 disabled 
                 className="
                   !opacity-100 
@@ -75,14 +68,14 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
               />
             </Form.Item>
           </Col>
-          <Col xs={24} md={8}>
+          {/* <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Tipo de Comprobante</span>}>
               <Select 
-                value={comprobante?.comprobantesTipos.codigo || ''} 
+                value={movimiento?.comprobanteTipo || ''} 
                 disabled 
                 className="w-full"
               >
-                {comprobantesTipos.map((tipo) => (
+                {movimientoTipos.map((tipo) => (
                   <Select.Option 
                     key={tipo.value} 
                     value={tipo.value} 
@@ -100,57 +93,57 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
                 ))}
               </Select>
             </Form.Item>
-          </Col>
+          </Col> */}
         </Row>
 
         {/* Fila 2 */}
         <Row gutter={16}>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <Form.Item label={<span className="dark:text-gray-300">Serie</span>}>
               <Input 
-                value={comprobante?.serie || ''} 
+                value={movimiento?.serie || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
             </Form.Item>
           </Col>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={12}>
             <Form.Item label={<span className="dark:text-gray-300">Número</span>}>
               <Input 
-                value={comprobante?.numero || ''} 
+                value={movimiento?.numero || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Estado</span>}>
-              <Select 
-                value={comprobante?.comprobantesVentaEstado.codigo || ''} 
-                disabled 
-                className="w-full"
-              >
-                {estados.map((estado) => (
-                  <Select.Option 
-                    key={estado.value} 
-                    value={estado.value} 
-                    className="!dark:bg-gray-700 !dark:text-gray-300 !dark:hover:bg-gray-600"
-                  >
-                    {estado.label}
-                  </Select.Option>
-                ))}
-              </Select>
             </Form.Item>
           </Col>
         </Row>
 
         {/* Fila 3 */}
         <Row gutter={16}>
-          
+          {/* <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Estado</span>}>
+              <Select 
+                value={movimiento?.estado || ''} 
+                disabled 
+                className="w-full"
+                dropdownClassName="dark:bg-gray-800"
+              >
+                {estados.map((estado) => (
+                  <Select.Option 
+                    key={estado.value} 
+                    value={estado.value} 
+                    className="dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  >
+                    {estado.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col> */}
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Número de Documento del Cliente</span>}>
               <Input 
-                value={comprobante?.numeroDocumentoCliente || ''} 
+                value={movimiento?.numeroDocumentoCliente || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
@@ -159,45 +152,45 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Nombre/Razón Social del Cliente</span>}>
               <Input 
-                value={comprobante?.nombreCliente || ''} 
+                value={movimiento?.nombreCliente || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Moneda</span>}>
-              <Select 
-                value={comprobante?.codigoMoneda || ''} 
-                disabled 
-                className="w-full"
-              >
-                {monedas.map((moneda) => (
-                  <Select.Option 
-                    key={moneda.value} 
-                    value={moneda.value} 
-                    className="!dark:bg-gray-700 !dark:text-gray-300 !dark:hover:bg-gray-600"
-                  >
-                    {moneda.label}
-                  </Select.Option>
-                ))}
-              </Select>
             </Form.Item>
           </Col>
         </Row>
 
         {/* Fila 4 */}
         <Row gutter={16}>
-          <Col xs={24} md={24}>
+          <Col xs={24} md={12}>
             <Form.Item label={<span className="dark:text-gray-300">Observaciones</span>}>
               <Input.TextArea 
-                value={comprobante?.observaciones || ''} 
+                value={movimiento?.observaciones || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
             </Form.Item>
           </Col>
-          
+          {/* <Col xs={24} md={12}>
+            <Form.Item label={<span className="dark:text-gray-300">Moneda</span>}>
+              <Select 
+                value={movimiento?.moneda || ''} 
+                disabled 
+                className="w-full"
+                dropdownClassName="dark:bg-gray-800"
+              >
+                {monedas.map((moneda) => (
+                  <Select.Option 
+                    key={moneda.value} 
+                    value={moneda.value} 
+                    className="dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  >
+                    {moneda.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col> */}
         </Row>
 
         {/* Tabla de detalles */}
@@ -220,7 +213,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Subtotal</span>}>
               <Input 
-                value={comprobante?.subtotal || ''} 
+                value={movimiento?.subtotal || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
@@ -229,7 +222,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Impuesto</span>}>
               <Input 
-                value={comprobante?.impuesto || ''} 
+                value={movimiento?.impuesto || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
@@ -238,7 +231,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Total</span>}>
               <Input 
-                value={comprobante?.total || ''} 
+                value={movimiento?.total || ''} 
                 disabled 
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
@@ -250,14 +243,12 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
   );
 };
 
-ComprobanteModal.propTypes = {
+MovimientoModal.propTypes = {
   visible: PropTypes.bool.isRequired,
   onCancel: PropTypes.func.isRequired,
   form: PropTypes.object.isRequired,
-  comprobante: PropTypes.object,
-  monedas: PropTypes.array.isRequired,
-  comprobantesTipos: PropTypes.array.isRequired,
-  estados: PropTypes.array.isRequired,
+  movimiento: PropTypes.object,
+  movimientoDetalle: PropTypes.array.isRequired,
 };
 
-export default ComprobanteModal;
+export default MovimientoModal;

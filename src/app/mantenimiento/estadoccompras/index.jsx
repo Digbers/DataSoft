@@ -38,7 +38,7 @@ const TablaEstadosCompras = () => {
       setLoading(false);
     }
   };
-  // Esto asegura que solo se haga una llamada inicial para cargar los datos.
+
   useEffect(() => {
     fetchData(pagination);
   }, [pagination.current, pagination.pageSize]); // Dependencias específicas para evitar llamadas duplicadas
@@ -251,7 +251,7 @@ const TablaEstadosCompras = () => {
         form={form}
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
-        estadoCompra={editingEstadoCompra}
+        estadoComprobante={editingEstadoCompra}
       />
     </div>
   );

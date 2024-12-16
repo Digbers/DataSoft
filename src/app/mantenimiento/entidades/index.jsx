@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, message, Popconfirm, Form, Input } from 'antd';
+import { Table, Button, message, Popconfirm, Form, Input, Tag, Checkbox } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import { useAuth } from '../../../context/AuthContext';
 import ModalEntidades from './ModalEntidades';  // Importar el nuevo componente de modal
@@ -9,7 +9,9 @@ const TablaEntidades = () => {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const [editingEntidad, setEditingEntidad] = useState(null);
+  const [documentoTipos, setDocumentoTipos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [entidadesTipos, setEntidadesTipos] = useState([]);
   const { sesionEmpId, userCode } = useAuth();
   const [form] = Form.useForm();
   
@@ -50,6 +52,39 @@ const TablaEntidades = () => {
   useEffect(() => {
     fetchData(pagination);
   }, [pagination.current, pagination.pageSize]); // Dependencias específicas para evitar llamadas duplicadas
+
+  const fetchTipoDocumentos = async (empresa) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/empresas/documentos/find-by-empresa/${empresa}`);
+      const tipoDocumentos = response.data.map((tipoDocumento) => ({
+        id: tipoDocumento.docCodigo,
+        codigo: tipoDocumento.docCodigo,
+      }));
+      setDocumentoTipos(tipoDocumentos);
+    } catch (error) {
+      console.error("Error fetching tipo documentos:", error);
+      message.error('Error al cargar tipos de documentos');
+    }
+  };
+  const fetchEntidadesTipos = async (empresa) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/empresas/entidades/tipos/find-by-empresa/${empresa}`);
+      const entidadesTipos = response.data.map((entidadTipo) => ({
+        codigo: entidadTipo.tipoCodigo,
+        descripcion: entidadTipo.descripcion
+      }));
+      setEntidadesTipos(entidadesTipos);
+    } catch (error) {
+      console.error("Error fetching entidades tipos:", error);
+      message.error('Error al cargar tipos de entidades');
+    }
+  };
+  useEffect(() => {
+    if (sesionEmpId) {
+      fetchTipoDocumentos(sesionEmpId);
+      fetchEntidadesTipos(sesionEmpId);
+    }
+  }, [sesionEmpId]);
   
   // Eliminar entidad
   const handleDelete = async (id) => {
@@ -85,6 +120,7 @@ const TablaEntidades = () => {
         apellidoMaterno: values.apellidoMaterno,
         documentoTipo: values.documentoTipo,
         nroDocumento: values.nroDocumento,
+        direccion: values.direccion,
         email: values.email,
         celular: values.celular,
         sexo: values.sexo,
@@ -92,7 +128,9 @@ const TablaEntidades = () => {
         condicion: values.condicion,
         idEmpresa: sesionEmpId,
         usuarioCreacion: userCode,
-        usuarioActualizacion: editingEntidad ? userCode : null
+        usuarioActualizacion: editingEntidad ? userCode : null,
+        entidadesTipos: values.entidadesTiposList
+
       };
       
       if (editingEntidad) {
@@ -190,7 +228,6 @@ const TablaEntidades = () => {
             onClick={() => {
               clearFilters && clearFilters();
               setSelectedKeys([]); // Limpia el estado del filtro
-              // Limpiar el filtro y recargar la tabla con los datos sin filtro
               handleSearch('', 'nombre'); // Pasamos un valor vacío para cargar todos los datos
               confirm();
             }}
@@ -282,6 +319,19 @@ const TablaEntidades = () => {
       sorter: true,
       filterSearch: true,
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+      render: (documentoTipo) => {
+        // Buscar el tipo por el ID y definir el color
+        const documentoTipoAC = documentoTipos.find(tipo => tipo.codigo === documentoTipo);
+        let color = '';
+        if (documentoTipoAC?.value === 'DNI') {
+          color = 'green';
+        } else if (documentoTipoAC?.value === 'RUC') {
+          color = 'blue';
+        } 
+        return documentoTipoAC ? (
+          <Tag color={color}>{documentoTipoAC.codigo}</Tag>
+        ) : 'Sin tipo';
+      },
       filterDropdown: ({
         setSelectedKeys, selectedKeys, confirm, clearFilters,
       }) => (
@@ -303,6 +353,43 @@ const TablaEntidades = () => {
               setSelectedKeys([]); // Limpia el estado del filtro
               // Limpiar el filtro y recargar la tabla con los datos sin filtro
               handleSearch('', 'documentoTipo'); // Pasamos un valor vacío para cargar todos los datos
+              confirm();
+            }}
+            icon={<i className="fas fa-eraser" />}
+            style={{ padding: 0 }}
+          >
+            Limpiar
+          </Button>
+        </div>
+      ),
+    },
+    {
+      title: 'Dirección',
+      dataIndex: 'direccion',
+      sorter: true,
+      filterSearch: true,
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+      filterDropdown: ({
+        setSelectedKeys, selectedKeys, confirm, clearFilters,
+      }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Buscar dirección"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => {
+              confirm();
+              handleSearch(selectedKeys[0], 'direccion');
+            }}
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+          />
+          <Button
+            type="link"
+            onClick={() => {
+              clearFilters && clearFilters();
+              setSelectedKeys([]); // Limpia el estado del filtro
+              // Limpiar el filtro y recargar la tabla con los datos sin filtro
+              handleSearch('', 'direccion'); // Pasamos un valor vacío para cargar todos los datos
               confirm();
             }}
             icon={<i className="fas fa-eraser" />}
@@ -393,6 +480,17 @@ const TablaEntidades = () => {
       sorter: true,
       filterSearch: true,
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+      render: (sexo) => {
+        let color = '';
+        if (sexo === 'M') {
+          color = 'blue';
+          return <Tag color={color}>Masculino</Tag>;
+        } else if (sexo === 'F') {
+          color = 'pink';
+          return <Tag color={color}>Femenino</Tag>;
+        }
+        return <Tag color={color}>Otro</Tag>;
+      },
       filterDropdown: ({
         setSelectedKeys, selectedKeys, confirm, clearFilters,
       }) => (
@@ -430,6 +528,13 @@ const TablaEntidades = () => {
       sorter: true,
       filterSearch: true,
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+      render: (estado) => {
+        if (estado === true) {
+          return <Checkbox checked={estado} />;
+        } else {
+          return <Checkbox />;
+        }
+      },
       filterDropdown: ({
         setSelectedKeys, selectedKeys, confirm, clearFilters,
       }) => (
@@ -499,6 +604,35 @@ const TablaEntidades = () => {
       ),
     },
     {
+      title: 'Tipo Entidad',
+      dataIndex: 'entidadesTiposList',
+      sorter: true,
+      filterSearch: true,
+      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
+      render: (entidadesTiposList) => {
+        return entidadesTiposList.map((element) => {
+          const tipoEntidadAC = entidadesTipos.find(tipo => tipo.codigo === element);
+          let color = '';
+          if (tipoEntidadAC?.codigo === 'CLI') {
+            color = 'green';
+          } else if (tipoEntidadAC?.codigo === 'PRO') {
+            color = 'blue';
+          } else if (tipoEntidadAC?.codigo === 'TRA') {
+            color = 'purple';
+          } else if (tipoEntidadAC?.codigo === 'VEN') {
+            color = 'orange';
+          } else {
+            color = 'white';
+          }
+          return (
+            <Tag color={color} key={element}>
+              {tipoEntidadAC?.descripcion || 'Desconocido'}
+            </Tag>
+          );
+        });
+      },
+    },
+    {
       title: 'Acciones',
       fixed: 'right',
       key: 'actions',
@@ -558,13 +692,17 @@ const TablaEntidades = () => {
         sticky
       />
       {/* Modal para Entidad */}
-      <ModalEntidades
-        visible={modalVisible}
-        form={form}
-        onClose={() => setModalVisible(false)}
-        onSave={handleSave}
-        entidad={editingEntidad}
-      />
+      { entidadesTipos.length > 0 && documentoTipos.length > 0 && (
+        <ModalEntidades
+          visible={modalVisible}
+          form={form}
+          onClose={() => setModalVisible(false)}
+          onSave={handleSave}
+          entidad={editingEntidad}
+          documentosTipos={documentoTipos}
+          entidadesTipos={entidadesTipos}
+        />
+      )}
     </div>
   );
   

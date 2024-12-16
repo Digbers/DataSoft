@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, message, Popconfirm, Form, Input } from 'antd';
+import { Table, Button, message, Popconfirm, Form, Input, Tag } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import { useAuth } from '../../../context/AuthContext';
 import ModalPuntoVenta from './ModalPuntoVenta';
@@ -84,7 +84,6 @@ const TablaPuntosVentas = () => {
     try {
       const puntoVentaRequest = {
         id: editingPuntoVenta ? editingPuntoVenta.id : null,
-        codigo: values.codigo,
         nombre: values.nombre,
         direccion: values.direccion,
         idEmpresa: sesionEmpId,
@@ -205,13 +204,10 @@ const TablaPuntosVentas = () => {
         dataIndex: 'almacen',
         sorter: true,
         filterSearch: true,
-        className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    },
-    {
-        title: 'Ubigeo',
-        dataIndex: 'ubigeo',
-        sorter: true,
-        filterSearch: true,
+        render: (almacen) => {
+            const almacenE = almacenes.find(a => a.value === almacen);
+            return <Tag color="default">{almacenE.label}</Tag>;
+        },
         className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {

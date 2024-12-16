@@ -8,9 +8,11 @@ import { Route, Routes } from 'react-router-dom';
 import ParticlesComponent from "../components/Particles";
 import renderRoutes from '../components/routes/RenderRoutes'; 
 import Dashboard from "../pages/Dashboard";
+import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2'
 import ConfiguracionMenus from "../app/configuracion/menus";
 import ConfiguracionUsuarios from "../app/configuracion/usuarios";
+import { useAuth } from '../context/AuthContext';
 
 const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVentaId }) => {
   const [menus, setMenus] = useState([]);
@@ -20,6 +22,20 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
     nombrePuntoVenta: ''
   });
   const [navbarKey, setNavbarKey] = useState(0);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const { logout, authorities } = useAuth();
+
+  const isAdmin = authorities.includes('ROLE_ADMIN');
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+  
+
+  const handleClickLogout = () => {
+    logout();
+    window.location.href = '/login';      
+  };
   
   useEffect(() => {
     getMenusByUserName(userCode)
@@ -78,6 +94,61 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
         Bienvenido, {user} a {datosEmp.nombreEmpresa}.
       </p>
       <ThemeToggleButton />
+      <button
+        onClick={toggleDropdown}
+        className="flex items-center justify-between p-2 text-gray-800 bg-white rounded-md w-32 shadow-md transition-all duration-300 ease-in-out"
+      >
+        <div className="flex items-center">
+          <i className="fas fa-user mr-2"></i>
+          <span className="text-sm">{user}</span>
+        </div>
+        <i className={`fas ${isDropdownOpen ? 'fa-chevron-up' : 'fa-chevron-down'} ml-2`}></i>
+      </button>
+
+      {/* Menú desplegable */}
+      {isDropdownOpen && (
+      <ul className="absolute right-0 top-0 mt-16 w-48 bg-white rounded-md shadow-lg p-3 space-y-2 z-50">
+        {/* Enlaces solo visibles para admin */}
+        {isAdmin && (
+          <>
+            <li>
+              <Link
+                to="/main/configuracion/menus/"
+                onClick={toggleDropdown}
+                className="flex items-center p-2 text-gray-800 hover:bg-gray-200 rounded-md transition-all duration-300"
+              >
+                <i className="fas fa-cog mr-2"></i>
+                Permisos de Menús
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/main/configuracion/usuarios/"
+                onClick={toggleDropdown}
+                className="flex items-center p-2 text-gray-800 hover:bg-gray-200 rounded-md transition-all duration-300"
+              >
+                <i className="fas fa-users mr-2"></i>
+                Usuarios
+              </Link>
+            </li>
+          </>
+        )}
+        {/* Botón de cerrar sesión */}
+        <li>
+          <button
+            type="button"
+            onClick={() => {
+              handleClickLogout();
+            }}
+            className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white p-2 rounded-md font-semibold transition-all duration-300 ease-in-out transform hover:scale-105"
+          >
+            <i className="fas fa-sign-out"></i>
+            Cerrar Sesión
+          </button>
+        </li>
+      </ul>
+    )}
+
     </div>
 
     {/* Contenedor de rutas */}

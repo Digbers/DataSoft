@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, message, Popconfirm, Form, Input } from 'antd';
+import { Table, Button, message, Popconfirm, Form, Input, Tag, Checkbox } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import { useAuth } from '../../../context/AuthContext';
 import ModalEnvaces from './ModalEnvaces';  // Importar el nuevo componente de modal
@@ -12,8 +12,10 @@ const TablaEnvaces = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const { sesionEmpId, userCode } = useAuth();
   const [form] = Form.useForm();
+  const [almacenes, setAlmacenes] = useState([]);
   
-  
+  const tiposEnvases = [{value: 'TINA', label: 'TINA'}, {value: 'JAVA', label: 'JAVA'}, {value: 'NA', label: 'NA'}];
+
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
     try {
@@ -45,6 +47,24 @@ const TablaEnvaces = () => {
   useEffect(() => {
     fetchData(pagination);
   }, [pagination.current, pagination.pageSize]); // Dependencias específicas para evitar llamadas duplicadas
+  useEffect(() => {
+    fetchAlmacenes();
+  }, []);
+
+  const fetchAlmacenes = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/inventario/almacenes/find/empresa/' + sesionEmpId);
+      const almacenes = response.data.map(almacen => ({
+        value: almacen.id,
+        label: almacen.nombre
+      }));
+      setAlmacenes(almacenes);
+    } catch (error) {
+      console.error('Error fetching almacenes padres:', error);
+      message.error('Error fetching almacenes padres');
+    }
+  };
+  
   
   // Eliminar moneda
   const handleDelete = async (id) => {
@@ -74,7 +94,7 @@ const TablaEnvaces = () => {
   const handleSave = async (values) => {
     try {
       const envaceRequest = {
-        id: editingEnvace ? editingEnvace.id : null,
+        idEnvase: editingEnvace ? editingEnvace.idEnvase : null,
         tipoEnvase: values.tipoEnvase,
         descripcion: values.descripcion,
         capacidad: values.capacidad,
@@ -86,7 +106,7 @@ const TablaEnvaces = () => {
       };
       
       if (editingEnvace) {
-        await axios.patch(`http://localhost:8080/api/inventario/envases/update/${editingEnvace.id}`, envaceRequest);
+        await axios.patch(`http://localhost:8080/api/inventario/envases/update/${editingEnvace.idEnvase}`, envaceRequest);
         message.success('Envace actualizado exitosamente');
       } else {
         await axios.post(`http://localhost:8080/api/inventario/envases/save`, envaceRequest);
@@ -124,6 +144,18 @@ const TablaEnvaces = () => {
       dataIndex: 'tipoEnvase',
       sorter: true,
       filterSearch: true,
+      render: (record) => {
+        const tipo = tiposEnvases.find(tipo => tipo.value === record);
+        if(tipo.value === 'NA') {
+          return <Tag color="yellow">{tipo.label}</Tag>;
+        }else if(tipo.value === 'JAVA') {
+          return <Tag color="warning">{tipo.label}</Tag>;
+        }else if(tipo.value === 'TINA') {
+          return <Tag color="success">{tipo.label}</Tag>;
+        } else {
+          return <Tag color="default">{tipo.label}</Tag>;
+        }
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
       filterDropdown: ({
         setSelectedKeys, selectedKeys, confirm, clearFilters,
@@ -269,6 +301,13 @@ const TablaEnvaces = () => {
         dataIndex: 'estado',
         sorter: true,
         filterSearch: true,
+        render: (estado) => {
+          if (estado === true) {
+            return <Checkbox checked={estado} />;
+          } else {
+            return <Checkbox />;
+          }
+        },
         className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
         filterDropdown: ({
           setSelectedKeys, selectedKeys, confirm, clearFilters,
@@ -299,6 +338,33 @@ const TablaEnvaces = () => {
             </Button>
           </div>
         ),
+    },
+    {
+      title: 'Cantidad',
+      dataIndex: 'stockAlmacenList',
+      sorter: true,
+      width: '10%',
+      filterSearch: true,
+      render: (stockAlmacenList) => {
+        return stockAlmacenList?.map((stock, index) => {
+          const almacen = almacenes.find(
+            (almacen) => almacen.value === stock.idAlmacen && stock.idEmpresa === sesionEmpId
+          );
+          if (!almacen) {
+            //debe de generar la key por que no esta disponible en el stock
+            return <Tag key={index} color="default">Sin Stock</Tag>;
+          }
+    
+          return (
+            <Tag key={stock.idStock} color="blue">
+              {stock.cantidadEnvase + ' : ' + `${almacen.label.slice(0, 1)}...${almacen.label.slice(-9)}`}
+            </Tag>
+
+          );
+        });
+      },
+      className:
+        'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
       title: 'Acciones',
@@ -366,6 +432,7 @@ const TablaEnvaces = () => {
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         envace={editingEnvace}
+        tiposEnvases={tiposEnvases}
       />
     </div>
   );
