@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Form, message, Tag} from 'antd';
+import { Table, Button, Form, message, Tag, Modal } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import * as XLSX from 'xlsx';  // Para exportar a Excel
 import jsPDF from 'jspdf';     // Para exportar a PDF
@@ -53,7 +53,7 @@ const ComprobantesTable = () => {
   const fetchData = async (pagination, filters = {}, sorter = {}) => {
     setLoading(true);
     try {
-      const { data } = await axios.get('http://localhost:8080/api/ventas/comprobantes/list', {
+      const { data } = await axios.get('http://localhost:8080/api/compras/comprobantes/list', {
         params: {
           page: pagination.current - 1, // El backend comienza en 0
           size: pagination.pageSize,
@@ -134,87 +134,32 @@ const ComprobantesTable = () => {
   const handleView = (record) => {
     console.log(record);
     setEditingComprobante(record);
+    setModalVisible(true);
   };
   const handleAnular = (record) => {
-    console.log(record);
-    console.log(userCode);
-  };
+    const { confirm } = Modal;
 
-
-  // Abrir el modal de edición
-  /*
-  const handleEdit = (record) => {
-    const tipo = comprobantesTipos.find(t => t.value === record.tipo.codigo); // Mapea el tipo al valor correcto
-    const moneda = monedas.find(m => m.value === record.monedaCodigo); // Mapea la moneda al valor correcto
-    const estado = estados.find(e => e.value === record.estadoCodigo); // Mapea el estado al valor correcto
-    setEditingComprobante(record);
-    //form.setFieldsValue(record); 
-    console.log(record);
-    form.setFieldsValue({
-      ...record,  // Mantiene los valores actuales del resto de los campos
-      tipo: tipo ? tipo.value : null,  // Asigna el value del tipo encontrado
-      moneda: moneda ? moneda.value : null,  // Asigna el value de la moneda encontrada
-      estado: estado ? estado.value : null,  // Asigna el value del estado encontrado
+    confirm({
+      title: '¿Desea realmente anular el comprobante?',
+      content: `Código: ${record.serie} - ${record.numero}`,
+      okText: 'Sí',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          const response = await axios.post('http://localhost:8080/api/compras/anular-compra/' + record.id + '/' + userCode);
+          message.success('Comprobante anulado correctamente');
+          console.log('Respuesta del servidor:', response.data);
+        } catch (error) {
+          message.error('Error al anular el comprobante');
+          console.error('Error:', error);
+        }
+      },
+      onCancel: () => {
+        message.info('Operación cancelada');
+      },
     });
-    setModalVisible(true);
   };
-  // Abrir el modal de agregar
-  const handleAdd = () => {
-    setEditingComprobante(null);
-    form.resetFields();
-    setModalVisible(true);
-  };*/
-  // Guardar cambios de edición
-  /*
-  const handleSave = async () => {
-    try {
-      // Validar los campos antes de guardar
-      const values = await form.validateFields();
-      //console.log(values);
-      const comprobanteRequest = {
-        idComprobante: editingComprobante ? editingComprobante.idComprobante : null,  // Si estamos editando, usamos el id existente
-        codigo: values.codigo,
-        nombre: values.nombre,
-        tipo: { codigo: values.tipo },  // Asignar el tipo como un objeto con el value
-        empresa: {id: sesionEmpId}, 
-        stockAlmacenId: editingComprobante ? editingComprobante.stockAlmacenId : null,
-        almacenId: editingComprobante ? editingComprobante.almacenId : sesionAlmacenId,
-        monedaCodigo: values.moneda,
-        estadoCodigo: values.estado,
-        fechaRegistro: null, 
-        fechaEmision: values.fechaEmision,
-        fechaVencimiento: values.fechaVencimiento,
-        numeroDoc: values.numeroDoc,
-        subtotal: values.subtotal,
-        impuesto: values.impuesto,
-        total: values.total,
-        precioSugerido: values.precioSugerido,
-        usuarioCreacion: userCode, 
-        usuarioActualizacion: editingComprobante ? userCode : null  
-      };
-      console.log(comprobanteRequest);
-  
-      if (editingComprobante) {
-        // Si editingProducto tiene valor, es una edición
-        await axios.patch(`http://localhost:8080/api/ventas/comprobantes/update/${editingComprobante.idComprobante}`, comprobanteRequest);
-        message.success('Comprobante actualizado exitosamente');
-      } else {
-        // Si no hay comprobante, es un nuevo comprobante
-        await axios.post(`http://localhost:8080/api/ventas/comprobantes/save`, comprobanteRequest);
-        message.success('Comprobante creado exitosamente');
-      }
-  
-      setModalVisible(false);
-      form.resetFields();
-      fetchData(pagination);  // Recargar datos de la tabla
-    } catch (error) {
-      if (error.name === 'ValidationError') {
-        message.error('Por favor complete todos los campos requeridos');
-      } else {
-        message.error(editingComprobante ? 'Error actualizando comprobante' : 'Error creando comprobante');
-      }
-    }
-  };*/
+
   const columns = [
     {
       title: 'Fecha de Emisión',
@@ -222,6 +167,7 @@ const ComprobantesTable = () => {
       sorter: true,
       width: '10%',
       filterSearch: true,
+      render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -230,17 +176,19 @@ const ComprobantesTable = () => {
       sorter: true,
       width: '10%',
       filterSearch: true,
+      render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
       title: 'Tipo',
-      dataIndex: 'codigoTipo',
+      dataIndex: 'comprobantesTipos',
       sorter: true,
       width: '5%',
       filterSearch: true,
       render: (tipo) => {
         // Buscar el tipo por el ID y definir el color
-        const comprobanteTipo = comprobantesTipos.find(t => t.value === tipo);
+        //console.log(tipo);
+        const comprobanteTipo = comprobantesTipos.find(t => t.value === tipo.codigo);
         let color = '';
         if (comprobanteTipo?.value === 'FAC') {
           color = 'green';
@@ -273,7 +221,7 @@ const ComprobantesTable = () => {
     },
     {
       title: 'Número Doc',
-      dataIndex: 'numeroDoc',
+      dataIndex: 'nroDocumentoProveedor',
       sorter: true,
       width: '10%',
       filterSearch: true,
@@ -281,7 +229,7 @@ const ComprobantesTable = () => {
     },
     {
       title: 'Nombre/Razón Social',
-      dataIndex: 'nombre',
+      dataIndex: 'nombreProveedor',
       sorter: true,
       width: '20%',
       filterSearch: true,
@@ -313,7 +261,7 @@ const ComprobantesTable = () => {
     },
     {
       title: 'Moneda',
-      dataIndex: 'monedaCodigo',
+      dataIndex: 'codigoMoneda',
       sorter: true,
       width: '5%',
       filterSearch: true,
@@ -336,14 +284,14 @@ const ComprobantesTable = () => {
     },
     {
       title: 'Código Estado',
-      dataIndex: 'estadoCodigo',
+      dataIndex: 'comprobanteCompraEstados',
       sorter: true,
       width: '5%',
       filterSearch: true,
       render: (estado) => {
         // Definir el color basado en el estado
         let color = '';
-        switch (estado) {
+        switch (estado.codigo) {
           case 'ANU': color = 'red'; break;
           case 'CAN': color = 'orange'; break;
           case 'CON': color = 'green'; break;
@@ -352,7 +300,7 @@ const ComprobantesTable = () => {
           case 'EMI': color = 'cyan'; break;
           default: color = 'default';
         }
-        const estadoLabel = estados.find(e => e.value === estado)?.label || 'Sin estado';
+        const estadoLabel = estados.find(e => e.value === estado.codigo)?.label || 'Sin estado';
         return (
           <Tag color={color}>{estadoLabel.toUpperCase()}</Tag>
         );
@@ -365,16 +313,9 @@ const ComprobantesTable = () => {
       sorter: true,
       width: '5%',
       filterSearch: true,
-      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    },
-    {
-      title: 'Acciones',
-      fixed: 'right',
-      width: '5%',
-      key: 'actionView',
-      render: (text, record) => (
-        <Button onClick={() => handleView(record)} icon={<i className="fas fa-eye" />} />
-      ),
+      render: (puntoVenta) => {
+        return puntosVentas.find(p => p.value === puntoVenta)?.label || 'Sin punto de venta';
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -383,19 +324,14 @@ const ComprobantesTable = () => {
       width: '5%',
       key: 'actionAnular',
       render: (text, record) => (
-        <Button onClick={() => handleAnular(record)} icon={<i className="fas fa-ban" />} danger />
+        <>
+          <Button onClick={() => handleView(record)} icon={<i className="fas fa-eye" />} />
+          <Button onClick={() => handleAnular(record)} icon={<i className="fas fa-ban" />} danger />
+        </>
+        
       ),
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    }/*,
-    {
-      title: 'Acciones',
-      fixed: 'right',
-      key: 'actionEdit',
-      render: (text, record) => (
-        <Button onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
-      ),
-      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
-    },*/
+    }
   ];
 
   return (

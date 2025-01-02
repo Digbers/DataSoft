@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
-import avicola from '../../assets/avicola.png';
+//import avicola from '../../assets/avicola.png';
+import milagro from '../../assets/ac-el-milagro.png';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import PasswordInput from '../../components/inputs/PasswordInput';
 import TextInput from '../../components/inputs/TextInput';
@@ -67,7 +68,7 @@ import ParticlesComponent from '../../components/Particles';
     
     {/* Imagen del logotipo */}
     <div className="flex flex-col items-center justify-center mb-4 md:mb-0">
-      <img className="w-28 h-28 md:w-48 md:h-48 object-contain animate-pulse" src={avicola} alt="Avicola Logo" />
+      <img className="w-28 h-28 md:w-48 md:h-48 object-contain animate-pulse" src={milagro} alt="Avicola Logo" />
     </div>
 
     {/* Formulario de Login */}

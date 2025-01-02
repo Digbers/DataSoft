@@ -93,7 +93,7 @@ const CuentasXPagar = () => {
   const handleSave = async (values) => {
     try{
       values.usuarioCreacion = userCode;
-      values.idComprobanteVenta = editingComprobante.idComprobanteVenta;
+      values.idComprobanteCompra = editingComprobante.idComprobanteCompra;
       values.idEmpresa = sesionEmpId;
       //console.log(values);
       const response = await axios.post(`http://localhost:8080/api/finanzas/cuentas-pagar/save-pago`, values);
@@ -198,8 +198,8 @@ const CuentasXPagar = () => {
         key: 'montoPagado',
       },
       {
-        title: 'Formas de Cobro ',
-        dataIndex: 'formasPagosEntity',
+        title: 'Formas de Pago ',
+        dataIndex: 'formaPagosEntity',
         key: 'formasPagosEntity',
       },
       {
@@ -220,6 +220,7 @@ const CuentasXPagar = () => {
       {
         title: 'Fecha Creación',
         dataIndex: 'fechaCreacion',
+        render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
         key: 'fechaCreacion',
       },
       {
@@ -230,6 +231,7 @@ const CuentasXPagar = () => {
       {
         title: 'Fecha Actualización',
         dataIndex: 'fechaActualizacion',
+        render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
         key: 'fechaActualizacion',
       },
       {
@@ -277,6 +279,7 @@ const CuentasXPagar = () => {
         params: {
           page: pagination.current - 1, // El backend comienza en 0
           size: pagination.pageSize,
+          inPagado: inPagados,
           comprobanteTipo: filters.comprobanteTipo ? filters.comprobanteTipo[0] : null,
           fechaEmision: filters.fechaEmision ? filters.fechaEmision[0] : null,
           serie: filters.serie ? filters.serie[0] : null,
@@ -305,17 +308,27 @@ const CuentasXPagar = () => {
   useEffect(() => {
     fetchData(pagination);
   }, []);
+  
+  const handleBuscar = () => {
+    fetchData(pagination); // Llamada a la función fetchData con la configuración actual
+  };
   const handleNuevoPago = (record) => {
     console.log(record);
+    if(record.saldo === 0){
+      message.error('No se puede crear un pago con saldo 0');
+      return;
+    }
     setEditingComprobante(record);
+    setModalVisible(true);
   };
   const columns = [
     {
      title: 'Fecha',
-     dataIndex: 'fecha',
+     dataIndex: 'fechaEmision',
      sorter: true,
      width: '5%',
      filterSearch: true,
+     render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -326,7 +339,7 @@ const CuentasXPagar = () => {
       filterSearch: true,
       render: (tipo) => {
         // Buscar el tipo por el ID y definir el color
-        const comprobanteTipo = comprobantesTipos.find(t => t.value === tipo.codigo);
+        const comprobanteTipo = comprobantesTipos.find(t => t.value === tipo);
         let color = '';
         if (comprobanteTipo?.value === 'FAC') {
           color = 'green';
@@ -430,6 +443,12 @@ const CuentasXPagar = () => {
             >
               {inPagados ? 'Pagados' : 'No Pagados'}
             </Button>
+            <Button
+              onClick={handleBuscar}
+              icon={<i className={`fas fa-search`} />}
+            >
+              Buscar
+            </Button>
           </div>
           {/* Tabla de Ant Design */}
           <div className="mb-2 flex justify-between">
@@ -460,10 +479,10 @@ const CuentasXPagar = () => {
       />
 
       {/* Conditionally render ProductoModal only when envases and tipos are loaded */}
-      {monedas.length > 0 && comprobantesTipos.length > 0 &&  (
+      {monedas.length > 0 && formasPagos.length > 0 && editingComprobante &&  (
         <CuentasModal
           visible={modalVisible}
-          onCancel={() => setModalVisible(false)}
+          onClose={() => setModalVisible(false)}
           onSave={handleSave}
           form={form}
           comprobante={editingComprobante}

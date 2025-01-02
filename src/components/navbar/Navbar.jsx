@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import PropTypes from 'prop-types';
 
-import avicola from '../../assets/avicola.png';
+//import avicola from '../../assets/avicola.png';
+import milagro from '../../assets/ac-el-milagro.png';
 const Navbar = ({ menus, datosEmp }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({});
@@ -89,40 +90,58 @@ const Navbar = ({ menus, datosEmp }) => {
       )}
       
       <nav
-        className={` shadow-md fixed top-0 left-0 h-full flex justify-between flex-col bg-opacity-85 text-white transition-transform transform ${
+        className={`shadow-md fixed top-0 left-0 h-full flex flex-col bg-opacity-85 text-white transition-transform transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 md:static md:h-full lg:${isCollapsed ? 'w-16' : 'w-48'} ${
           isCollapsed ? 'w-16' : 'w-48'
         } glassmorphism-effect`}
         style={{ zIndex: 1000 }}
       >
-        <ul className="flex flex-col w-full items-start">
-          <div className={` bg-opacity-20 w-full rounded-b-lg  duration-400 text-gray-100 rounded-sm bg-cover hover:bg-purple-100 hover:shadow-inner bg-gradient-to-r from-purple-400 to-purple-600 focus:text-white transition-all ease-linear pb-2`}>
-            <div className="items-center justify-center mb-4 md:mb-0  md:flex">
-              <img className={`w-15 h-15 md:w-28 md:h-28 object-contain animate-pulse`} src={avicola} alt="Avicola Logo" />
-            </div>
-              <h3 className={`text-lg font-bold ${isCollapsed ? 'text-base' : 'text-xl'}`}>{datosEmp.nombreEmpresa}</h3>
-              <h3 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{datosEmp.nombreAlmacen}</h3>
-              <h3 className={`text-sm ${isCollapsed ? 'hidden' : 'block'}`}>{datosEmp.nombrePuntoVenta}</h3>
+        {/* Encabezado con imagen y detalles de empresa */}
+        <div
+          className={`bg-opacity-20 w-full rounded-b-lg duration-400 text-gray-100 rounded-sm bg-cover hover:bg-purple-100 hover:shadow-inner bg-gradient-to-r from-purple-400 to-purple-600 focus:text-white transition-all ease-linear pb-2`}
+        >
+          <div className="items-center justify-center mb-4 md:mb-0 md:flex">
+            <img
+              className={`w-15 h-15 md:w-28 md:h-28 object-contain animate-pulse`}
+              src={milagro}
+              alt="Avicola Logo"
+            />
           </div>
-          <div className="flex flex-col w-full items-start overflow-y-auto max-h-96 rounded-md">
-            {menus.map((menu) => renderMenu(menu))}
-          </div>
-        </ul>
-        <div className="flex flex-col items-center justify-end space-y-0 h-full py-0">
+          <h3 className={`text-sm sm:text-lg font-bold ${isCollapsed ? 'hidden' : 'block'}`}>
+            {datosEmp.nombreEmpresa}
+          </h3>
+          <h3 className={`text-sm ${isCollapsed ? 'text-xs' : 'text-sm'} font-bold`}>
+            {datosEmp.nombreAlmacen}
+          </h3>
+          <h3 className={`text-sm ${isCollapsed ? 'text-xs' : 'text-sm'} font-bold`}>
+            {datosEmp.nombrePuntoVenta}
+          </h3>
+        </div>
 
-              {/* Botón para colapsar */}
-              <button
-                type="button"
-                className={`flex items-center justify-center p-2 text-gray-800 rounded-md w-full ${
-                  isCollapsed ? 'bg-white' : 'bg-transparent'
-                } glassmorphism-effect transition-all duration-300 ease-in-out`}
-                onClick={toggleCollapse}
-              >
-                <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'} mr-2`}></i>
-              </button>
+        {/* Lista de menús con flex-grow */}
+        <ul className="flex-grow min-h-0 overflow-y-auto flex flex-col w-full items-start">
+          {menus.map((menu) => renderMenu(menu))}
+        </ul>
+
+        {/* Botón que permanece fijo al fondo */}
+        <div className="flex items-center justify-end py-2">
+          <button
+            type="button"
+            className={`flex items-center justify-center p-2 text-gray-800 rounded-md w-full ${
+              isCollapsed ? 'bg-white' : 'bg-transparent'
+            } glassmorphism-effect transition-all duration-300 ease-in-out`}
+            onClick={toggleCollapse}
+          >
+            <i
+              className={`fas ${
+                isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'
+              } mr-2`}
+            ></i>
+          </button>
         </div>
       </nav>
+
     </div>
   );
 };

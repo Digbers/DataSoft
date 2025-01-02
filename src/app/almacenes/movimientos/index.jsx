@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Form, message} from 'antd';
+import { Table, Button, Form, message, Tag } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import * as XLSX from 'xlsx';  // Para exportar a Excel
 import jsPDF from 'jspdf';     // Para exportar a PDF
@@ -15,7 +15,11 @@ const MovimientosTable = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const { sesionEmpId} = useAuth();
-  
+  const [almacenes, setAlmacenes] = useState([]);
+  const [monedas, setMonedas] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [motivos, setMotivos] = useState([]);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       if (sesionEmpId) {
@@ -55,11 +59,71 @@ const MovimientosTable = () => {
       setLoading(false);
     }
   };
-  console.log(movimientos);
 
   useEffect(() => {
     fetchData(pagination);
   }, []);
+  useEffect(() => {
+    fetchAlmacenes();
+    fetchMonedas();
+    fetchEstados();
+    fetchMotivos();
+  }, [sesionEmpId]);
+
+  const fetchAlmacenes= async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/inventario/almacenes/find/empresa/' + sesionEmpId);
+      const padres = response.data.map(padre => ({
+        value: padre.id,
+        label: padre.nombre
+      }));
+      //padres.unshift({ value: 0, label: 'Ninguno' });
+      setAlmacenes(padres);
+    } catch (error) {
+      console.error('Error fetching almacenes:', error);
+      message.error('Error fetching almacenes');
+    }
+  };
+  const fetchMonedas = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/finanzas/monedas/find-by-empresa/${sesionEmpId}`);
+      const monedaList = response.data.map((moneda) => ({
+        value: moneda.codigo,
+        label: moneda.nombre,
+      }));
+      setMonedas(monedaList);
+      return monedaList[0].value;
+    } catch (error) {
+      console.error('Error fetching monedas:', error);
+      message.error('Error fetching monedas');
+    }
+  };
+  const fetchEstados = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/inventario/movimientos/estados/find`);
+      const estadosList = response.data.map((estado) => ({
+        value: estado.codigo,
+        label: estado.nombre,
+      }));
+      setEstados(estadosList);
+    } catch (error) {
+      console.error('Error fetching estados:', error);
+      message.error('Error fetching estados');
+    }
+  };
+  const fetchMotivos = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/inventario/movimientos/motivos/find`);
+      const motivosList = response.data.map((motivo) => ({
+        value: motivo.codigo,
+        label: motivo.descripcion,
+      }));
+      setMotivos(motivosList);
+    } catch (error) {
+      console.error('Error fetching motivos:', error);
+      message.error('Error fetching motivos');
+    }
+  };
   // Obtener todos los datos para exportar (sin paginación)
   const fetchAllData = async () => {
     try {
@@ -113,6 +177,11 @@ const MovimientosTable = () => {
       sorter: true,
       width: '10%',
       filterSearch: true,
+      render: (fechaEmision) => {
+        if (!fechaEmision) return 'N/A';
+        const fecha = new Date(fechaEmision);
+        return fecha.toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -145,6 +214,10 @@ const MovimientosTable = () => {
       sorter: true,
       width: '5%',
       filterSearch: true,
+      render: (text) => {
+        const motivo = motivos.find(motivo => motivo.value === text);
+        return motivo ? motivo.label : text;
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -169,6 +242,14 @@ const MovimientosTable = () => {
       sorter: true,
       width: '10%',
       filterSearch: true,
+      render: (moneda) => {
+        // Definir el color en función del código de moneda
+        let color = moneda === 'DOL' ? 'geekblue' : 'gold';
+        const monedaLabel = monedas.find(m => m.value === moneda)?.label || 'Sin moneda';
+        return (
+          <Tag color={color}>{monedaLabel.toUpperCase()}</Tag>
+        );
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -177,6 +258,10 @@ const MovimientosTable = () => {
       sorter: true,
       width: '20%',
       filterSearch: true,
+      render: (almacen) => {
+        const almacenLabel = almacenes.find(a => a.value === almacen)?.label || 'Sin almacén';
+        return almacenLabel;
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -185,6 +270,10 @@ const MovimientosTable = () => {
       sorter: true,
       width: '5%',
       filterSearch: true,
+      render: (estado) => {
+        const estadoLabel = estados.find(e => e.value === estado)?.label || 'Sin estado';
+        return estadoLabel;
+      },
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     
@@ -235,6 +324,10 @@ const MovimientosTable = () => {
           onCancel={() => setModalVisible(false)}
           form={form}
           movimiento={selectedMovimiento}
+          almacenes={almacenes}
+          monedas={monedas}
+          estados={estados}
+          motivos={motivos}
         />
       
     </div>

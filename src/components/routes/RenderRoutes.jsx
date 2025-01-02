@@ -52,6 +52,12 @@ const importComponent = (path) => {
       return import('../../app/caja/ingresargastos');
     case 'almacenes/movimientos/':
       return import('../../app/almacenes/movimientos');
+    case 'reportes/kardex/':
+      return import('../../app/reportes/kardex');
+    case 'reportes/ingresosegresos/':
+      return import('../../app/reportes/ingresosegresos');
+    case 'reportes/utilidades/':
+      return import('../../app/reportes/utilidades');
     default:
       return import('../../pages/NotFoundPage'); 
   }

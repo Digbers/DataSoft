@@ -16,6 +16,8 @@ const ClienteModal = ({ isOpen, onClose, tipoDocumento, setEntidad, sesionEmpId,
         direccion: "",
         email: "",
         celular: "",
+        estado: true,
+        condicion: "HABIDO",
         entidadesTipos: ["CLI"]
     });
     useEffect(() => {

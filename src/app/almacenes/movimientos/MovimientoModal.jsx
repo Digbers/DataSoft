@@ -1,39 +1,43 @@
 import PropTypes from 'prop-types';
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Row, Col, Table, message } from 'antd';
+import { Modal, Form, Input, Row, Col, Table, message, Select } from 'antd';
 import axios from '../../../config/axiosConfig';
 
-const MovimientoModal = ({ visible, onCancel, form, movimiento }) => {
+const MovimientoModal = ({ visible, onCancel, form, movimiento, almacenes, monedas, estados, motivos }) => {
   const [detalle, setDetalle] = useState([]);
   // Cargar los detalles del comprobante
-  const fetchMovimientoDetalle = async (id) => {
+  const fetchDetalle = async (id) => {
     try {
       const response = await axios.get(`http://localhost:8080/api/inventario/movimientos/find-detalle/${id}`);
       setDetalle(response.data);
+      console.log(response.data);
     } catch (error) {
-      message.error('Error fetching movimiento detalle');
+      console.error('Error fetching detalle:', error);
+      message.error('Error fetching detalle');
     }
   };
 
   useEffect(() => {
     if (movimiento?.id) {
-      fetchMovimientoDetalle(movimiento.id);
+      fetchDetalle(movimiento.id);
     }
   }, [movimiento]);
 
   // Columnas para la tabla de detalles
   const detalleColumns = [
-    { title: 'N°', dataIndex: 'numero', key: 'numero' },
-    { title: 'Descripción', dataIndex: 'descripcion', key: 'descripcion' },
-    { title: 'Cantidad', dataIndex: 'cantidad', key: 'cantidad' },
-    { title: 'Peso', dataIndex: 'peso', key: 'peso' },
-    { title: 'Precio Unitario', dataIndex: 'precioUnitario', key: 'precioUnitario' },
-    { title: 'Descuento', dataIndex: 'descuento', key: 'descuento' },
+    { title: 'Codigo', dataIndex: 'codigo', key: 'codigo', width: '5%' },
+    { title: 'Descripción', dataIndex: 'descripcion', key: 'descripcion', width: '10%' },
+    { title: 'Unidad', dataIndex: 'unidad', key: 'unidad', width: '2%' },
+    { title: 'Cantidad', dataIndex: 'cantidad', key: 'cantidad', width: '2%' },
+    { title: 'Peso', dataIndex: 'peso', key: 'peso', width: '2%' },
+    { title: 'Tara', dataIndex: 'tara', key: 'tara', width: '2%' },
+    { title: 'Precio Unitario', dataIndex: 'precioUnitario', key: 'precioUnitario', width: '2%' },
+    { title: 'Total', dataIndex: 'total', key: 'total', width: '2%' },
   ];
 
   return (
     <Modal
-      title={movimiento && movimiento.id ? `${movimiento.serie} - ${movimiento.numero} - ${movimiento.fechaEmision} - ${movimiento.nombreCliente}` : 'No existe el movimiento'}
+      title={movimiento && movimiento.id ? `${movimiento.serie} - ${movimiento.numero}` : 'No existe el movimiento'}
       open={visible}
       onCancel={onCancel}
       footer={null}
@@ -44,41 +48,25 @@ const MovimientoModal = ({ visible, onCancel, form, movimiento }) => {
         {/* Fila 1 */}
         <Row gutter={16}>
           <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Fecha de Emisión</span>}>
+            <Form.Item label={<span className="dark:text-gray-300">Documento Referencia</span>}>
               <Input 
-                value={movimiento?.fechaEmision || ''} 
+                value={movimiento?.documentoReferencia || ''} 
                 disabled
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
             </Form.Item>
           </Col>
           <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Fecha de Vencimiento</span>}>
-              <Input 
-                value={movimiento?.fechaVencimiento || ''} 
-                disabled 
-                className="
-                  !opacity-100 
-                  !dark:text-gray-300 
-                  !text-gray-700 
-                  !dark:bg-gray-700 
-                  !bg-gray-100 
-                  !cursor-not-allowed
-                "
-              />
-            </Form.Item>
-          </Col>
-          {/* <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Tipo de Comprobante</span>}>
+            <Form.Item label={<span className="!dark:text-gray-300">Motivo</span>}>
               <Select 
-                value={movimiento?.comprobanteTipo || ''} 
+                value={movimiento?.motivoCodigo || ''} 
                 disabled 
                 className="w-full"
               >
-                {movimientoTipos.map((tipo) => (
+                {motivos.map((motivo) => (
                   <Select.Option 
-                    key={tipo.value} 
-                    value={tipo.value} 
+                    key={motivo.value} 
+                    value={motivo.value} 
                     className="
                     !opacity-100 
                     !dark:text-gray-300 
@@ -88,109 +76,82 @@ const MovimientoModal = ({ visible, onCancel, form, movimiento }) => {
                     !cursor-not-allowed
                   "
                   >
-                    {tipo.label}
+                    {motivo.label}
                   </Select.Option>
                 ))}
               </Select>
             </Form.Item>
-          </Col> */}
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Usuario</span>}>
+              <Input 
+                value={movimiento?.idUsuario || ''} 
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
+              />
+            </Form.Item>
+          </Col> 
         </Row>
-
         {/* Fila 2 */}
         <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <Form.Item label={<span className="dark:text-gray-300">Serie</span>}>
-              <Input 
-                value={movimiento?.serie || ''} 
-                disabled 
-                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item label={<span className="dark:text-gray-300">Número</span>}>
-              <Input 
-                value={movimiento?.numero || ''} 
-                disabled 
-                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        {/* Fila 3 */}
-        <Row gutter={16}>
-          {/* <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Estado</span>}>
-              <Select 
-                value={movimiento?.estado || ''} 
-                disabled 
-                className="w-full"
-                dropdownClassName="dark:bg-gray-800"
-              >
-                {estados.map((estado) => (
-                  <Select.Option 
-                    key={estado.value} 
-                    value={estado.value} 
-                    className="dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                  >
-                    {estado.label}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col> */}
+          
           <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Número de Documento del Cliente</span>}>
-              <Input 
-                value={movimiento?.numeroDocumentoCliente || ''} 
-                disabled 
-                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Nombre/Razón Social del Cliente</span>}>
-              <Input 
-                value={movimiento?.nombreCliente || ''} 
-                disabled 
-                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        {/* Fila 4 */}
-        <Row gutter={16}>
-          <Col xs={24} md={12}>
-            <Form.Item label={<span className="dark:text-gray-300">Observaciones</span>}>
-              <Input.TextArea 
-                value={movimiento?.observaciones || ''} 
-                disabled 
-                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
-              />
-            </Form.Item>
-          </Col>
-          {/* <Col xs={24} md={12}>
             <Form.Item label={<span className="dark:text-gray-300">Moneda</span>}>
               <Select 
-                value={movimiento?.moneda || ''} 
+                value={movimiento?.monedaCodigo || ''} 
                 disabled 
                 className="w-full"
-                dropdownClassName="dark:bg-gray-800"
               >
                 {monedas.map((moneda) => (
                   <Select.Option 
                     key={moneda.value} 
                     value={moneda.value} 
-                    className="dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                    className="!dark:bg-gray-700 !dark:text-gray-300 !dark:hover:bg-gray-600"
                   >
                     {moneda.label}
                   </Select.Option>
                 ))}
               </Select>
             </Form.Item>
-          </Col> */}
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Estado</span>}>
+              <Select 
+                value={movimiento?.estadoCodigo || ''} 
+                disabled 
+                className="w-full"
+              >
+                {estados.map((estado) => (
+                  <Select.Option 
+                    key={estado.value} 
+                    value={estado.value} 
+                    className="!dark:bg-gray-700 !dark:text-gray-300 !dark:hover:bg-gray-600"
+                  >
+                    {estado.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="!dark:text-gray-300">Almacén</span>}>
+              <Select 
+                value={movimiento?.idAlmacen || ''} 
+                disabled 
+                className="w-full"
+              >
+                {almacenes.map((almacen) => (
+                  <Select.Option 
+                    key={almacen.value} 
+                    value={almacen.value} 
+                    className="!dark:bg-gray-700 !dark:text-gray-300 !dark:hover:bg-gray-600"
+                  >
+                    {almacen.label}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
         </Row>
 
         {/* Tabla de detalles */}
@@ -202,8 +163,9 @@ const MovimientoModal = ({ visible, onCancel, form, movimiento }) => {
               pagination={false}
               rowKey="id"
               bordered
-              className="dark:border-gray-700"
-              rowClassName="dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="!dark:border-gray-700"
+              rowClassName="!dark:bg-gray-800 !dark:text-gray-300 !dark:hover:bg-gray-700"
+              scroll={{ x: '100%' }} 
             />
           </Col>
         </Row>
@@ -211,25 +173,7 @@ const MovimientoModal = ({ visible, onCancel, form, movimiento }) => {
         {/* Subtotal, Impuesto y Total */}
         <Row gutter={16} style={{ marginTop: '16px' }}>
           <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Subtotal</span>}>
-              <Input 
-                value={movimiento?.subtotal || ''} 
-                disabled 
-                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Impuesto</span>}>
-              <Input 
-                value={movimiento?.impuesto || ''} 
-                disabled 
-                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={8}>
-            <Form.Item label={<span className="dark:text-gray-300">Total</span>}>
+            <Form.Item label={<span className="!dark:text-gray-300">Total</span>}>
               <Input 
                 value={movimiento?.total || ''} 
                 disabled 
@@ -248,7 +192,10 @@ MovimientoModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
   form: PropTypes.object.isRequired,
   movimiento: PropTypes.object,
-  movimientoDetalle: PropTypes.array.isRequired,
+  almacenes: PropTypes.array.isRequired,
+  monedas: PropTypes.array.isRequired,
+  estados: PropTypes.array.isRequired,
+  motivos: PropTypes.array.isRequired,
 };
 
 export default MovimientoModal;

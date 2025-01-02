@@ -89,7 +89,7 @@ const CuentasXCobrar = () => {
       values.usuarioCreacion = userCode;
       values.idComprobanteVenta = editingComprobante.idComprobanteVenta;
       values.idEmpresa = sesionEmpId;
-      //console.log(values);
+      //console.log(values); 
       const response = await axios.post(`http://localhost:8080/api/finanzas/cuentas-cobrar/save-cobro`, values);
       console.log(response.data);
       message.success('Cobro guardado correctamente');
@@ -212,6 +212,7 @@ const CuentasXCobrar = () => {
       {
         title: 'Fecha Creación',
         dataIndex: 'fechaCreacion',
+        render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
         key: 'fechaCreacion',
       },
       {
@@ -222,6 +223,7 @@ const CuentasXCobrar = () => {
       {
         title: 'Fecha Actualización',
         dataIndex: 'fechaActualizacion',
+        render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
         key: 'fechaActualizacion',
       },
       {
@@ -325,6 +327,7 @@ const CuentasXCobrar = () => {
      sorter: true,
      width: '5%',
      filterSearch: true,
+     render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
      className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {

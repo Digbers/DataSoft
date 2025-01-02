@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Form, message, Tag} from 'antd';
+import { Table, Button, Form, message, Tag, Modal } from 'antd';
 import axios from "../../../config/axiosConfig"; 
 import * as XLSX from 'xlsx';  // Para exportar a Excel
 import jsPDF from 'jspdf';     // Para exportar a PDF
@@ -37,6 +37,10 @@ const ComprobantesTable = () => {
         setEstadosSelected(estados);
         const puntosVentas = await fetchPuntosVentas(sesionAlmacenId);
         setPuntosVentasSelected(puntosVentas);
+        console.log(puntosVentasSelected);
+        console.log(comprobanteTiposSelected);
+        console.log(monedasSelected);
+        console.log(estadosSelected);
       }
     };
     fetchInitialData();
@@ -61,17 +65,17 @@ const ComprobantesTable = () => {
           idEmpresa: sesionEmpId,
           serie: filters.serie ? filters.serie[0] : null,
           numero: filters.numero ? filters.numero[0] : null,
-          idPuntoVenta: puntosVentasSelected ? puntosVentasSelected.value : null,
+          idPuntoVenta: filters.idPuntoVenta ? filters.idPuntoVenta[0] : null,
           fechaEmision: filters.fechaEmision ? filters.fechaEmision[0] : null,
           fechaVencimiento: filters.fechaVencimiento ? filters.fechaVencimiento[0] : null,
-          codigoTipo: comprobanteTiposSelected,
+          codigoTipo: filters.codigoTipo ? filters.codigoTipo[0] : null,
           nombre: filters.nombre ? filters.nombre[0] : null,
           numeroDoc: filters.numeroDoc ? filters.numeroDoc[0] : null,
           subtotal: filters.subtotal ? filters.subtotal[0] : null,
           impuesto: filters.impuesto ? filters.impuesto[0] : null,
           total: filters.total ? filters.total[0] : null,
-          monedaCodigo: monedasSelected,
-          estadoCodigo: estadosSelected,
+          monedaCodigo: filters.monedaCodigo ? filters.monedaCodigo[0] : null,
+          estadoCodigo: filters.estadoCodigo ? filters.estadoCodigo[0] : null,
           sunat: filters.sunat ? filters.sunat[0] : null,
           sort: sorter.field ? `${sorter.field},${sorter.order === 'ascend' ? 'asc' : 'desc'}` : null,
         },
@@ -83,7 +87,7 @@ const ComprobantesTable = () => {
         total: data.totalElements,
       });
     } catch (error) {
-      message.error('Error fetching productos');
+      message.error('Error fetching comprobantes');
     } finally {
       setLoading(false);
     }
@@ -149,8 +153,28 @@ const ComprobantesTable = () => {
     setModalVisible(true);
   };
   const handleAnular = (record) => {
-    console.log(record);
-    console.log(userCode);
+    const { confirm } = Modal;
+
+
+    confirm({
+      title: '¿Desea realmente anular el comprobante?',
+      content: `Código: ${record.serie} - ${record.numero}`,
+      okText: 'Sí',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          const response = await axios.post('http://localhost:8080/api/ventas/anular-venta/' + record.id + '/' + userCode);
+          message.success('Comprobante anulado correctamente');
+          console.log('Respuesta del servidor:', response.data);
+        } catch (error) {
+          message.error('Error al anular el comprobante');
+          console.error('Error:', error);
+        }
+      },
+      onCancel: () => {
+        message.info('Operación cancelada');
+      },
+    });
   };
 
   const columns = [
@@ -160,6 +184,7 @@ const ComprobantesTable = () => {
       sorter: true,
       width: '5%',
       filterSearch: true,
+      render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -168,6 +193,7 @@ const ComprobantesTable = () => {
       sorter: true,
       width: '5%',
       filterSearch: true,
+      render: (fecha) => fecha ? fecha.split('T')[0] : 'N/A',
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     },
     {
@@ -315,11 +341,11 @@ const ComprobantesTable = () => {
       width: '5%',
       key: 'actionAnular',
       render: (text, record) => (
-        <>
+        <div className="flex flex-row justify-center">
           <Button onClick={() => handleView(record)} icon={<i className="fas fa-eye" />} />
           <Button onClick={() => fetchComprobante(record.id)} icon={<i className="fas fa-file-pdf" />} />
           <Button onClick={() => handleAnular(record)} icon={<i className="fas fa-ban" />} danger />
-        </>
+          </div>
       ),
       className: 'text-gray-500 dark:text-gray-300 bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-400',
     }
@@ -350,10 +376,11 @@ const ComprobantesTable = () => {
         rowKey="id"
         scroll={{
           x: 'max-content',
-          y: 400,
+          y: 390,
         }}
         className='w-full text-sm text-left rtl:text-right text-gray-600 dark:text-gray-400'
         onChange={(pagination, filters, sorter) => fetchData(pagination, filters, sorter)}
+        sticky
       />
 
       {/* Conditionally render ProductoModal only when envases and tipos are loaded */}

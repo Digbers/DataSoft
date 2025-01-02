@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import TextInput from "../../../components/inputs/TextInput";
 import SelectInput from "../../../components/inputs/SelectInput";
+import SelectWithOptions from "../../../components/inputs/SelectWithOptions";
 import TextAreaInput from "../../../components/inputs/TextAreaInput";
 //import { motion } from "framer-motion";
 import Swal from "sweetalert2";
@@ -8,6 +9,7 @@ import { useAuth } from "../../../context/AuthContext";
 import useCompras  from "./useCompras";
 import CustomButton from "../../../components/inputs/CustomButton";
 import ClipLoader from 'react-spinners/ClipLoader';
+import useFetchEntidades from "../../../hooks/useFetchEntidades";
 
 const CompraNuevo = () => {
   //loader
@@ -20,11 +22,14 @@ const CompraNuevo = () => {
   const [estados, setEstados] = useState([]);
   const [comprobantes, setComprobantes] = useState([]);
   const [details, setDetails] = useState([]);
-  const [selectedMoneda, setSelectedMoneda] = useState("");
+  const [selectedMoneda, setSelectedMoneda] = useState({});
   const [tipoDocumentos, setTipoDocumentos] = useState([]);
   const [selectedTipoDocumento, setSelectedTipoDocumento] = useState("");
   const [stockPollo, setStockPollo] = useState(0);
-  const [codigoProductoVenta, setCodigoProductoVenta] = useState("POLLOSAC");
+  const [productosVentas, setProductosVentas] = useState([]);
+  const [productoVentaSeleccionado, setProductoVentaSeleccionado] = useState({});
+  const [metodoPago, setMetodoPago] = useState({});
+  const [entidades, setEntidades] = useState([]);
   const [proveedor, setProveedor] = useState({
     id: 0,
     documento: "",
@@ -48,6 +53,7 @@ const CompraNuevo = () => {
     precioUnitario: 0, // Puedes dejarlo en 0 o calcularlo según sea necesario
     descuento: 0, // Descuento inicial
     totalProducto: 0,
+    tara: 0,
   });
   const [formData, setFormData] = useState({
     comprobante: "",
@@ -79,7 +85,8 @@ const CompraNuevo = () => {
     }
   }, [userCode, sesionEmpId, sesionPuntoVentaId]);
 
-  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, handleStockPollo, buildRequestCompra, fetchGuardarCompra } = useCompras({
+  const { autocompleteNombre, autocompleteNroDocumento } = useFetchEntidades();
+  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, handleStockPollo, buildRequestCompra, fetchGuardarCompra, fetchProductosVentas, fetchMetodosPago} = useCompras({
     setComprobantes,
     setProducts,
     setMonedas,
@@ -103,11 +110,24 @@ useEffect(() => {
         // Cargar las monedas, métodos de pago y tipos de documentos
         const moneda = await fetchMonedas(sesionEmpId);
         setSelectedMoneda(moneda);
-        console.log(moneda);
         const tipoDocumento = await fetchTipoDocumentos(sesionEmpId);
         setSelectedTipoDocumento(tipoDocumento);
         const estado = await fetchComprasEstados(sesionEmpId);
+
+        const metodosPago = await fetchMetodosPago(sesionEmpId);
+        setMetodoPago(metodosPago);
+
         setFormData((prev) => ({ ...prev, estado }));
+        const productosVentas = await fetchProductosVentas(sesionEmpId);
+        const productos = productosVentas.map((pro) => ({
+          value: pro.id,
+          label: pro.nombre,
+          data: pro.codigo,
+          tipo: pro.tipoProducto,
+        }))
+        setProductosVentas(productos);
+        console.log(productosVentas);
+        setProductoVentaSeleccionado(productos.find(pro => pro.data === "POLLOSAC"));
 
       } catch (error) {
         console.error("Error al cargar datos iniciales:", error);
@@ -137,8 +157,8 @@ useEffect(() => {
       periodoRegistro: formattedMonth, // Set only the year and month
       fechaVencimiento: formattedDate
     }));
-    handleStockPollo(codigoProductoVenta);
-  }, []);
+    handleStockPollo(productoVentaSeleccionado.data);
+  }, [productoVentaSeleccionado]);
 
 
     // Maneja el cambio de comprobante
@@ -151,7 +171,7 @@ useEffect(() => {
         return; // Detener la ejecución si falta algún campo
       } 
       // Puedes agregar más validaciones si es necesario antes de guardar
-      const requestDTO = buildRequestCompra(formData,details,proveedor,selectedMoneda);
+      const requestDTO = buildRequestCompra(formData,details,proveedor,selectedMoneda,metodoPago);
       const ventaGuardadaId = await fetchGuardarCompra(requestDTO);
       if (ventaGuardadaId) {
         Swal.fire({
@@ -190,8 +210,8 @@ useEffect(() => {
     if(newDescripcion.length <1){
       setProducts([]);
     }
-    if (newDescripcion.length >= 3) {
-      debouncedFetchProducts(newDescripcion);
+    if (newDescripcion.length >= 2) {
+      debouncedFetchProducts(newDescripcion, productoVentaSeleccionado.tipo);
     }
   };
 
@@ -205,6 +225,7 @@ useEffect(() => {
       id: product.id, 
       idEnvase: product.envaseId,
       cantidadPollo: cantidadPollo,
+      productoPrincipalId: productoVentaSeleccionado.value,
       capacidadEnvase: product.capacidadEnvase,
       codigo: product.codigo,//sera reemplazado por el codigo del pollo stock
       descripcionA: product.descripcionA,
@@ -215,6 +236,7 @@ useEffect(() => {
       precioUnitario: product.precioCompra, // Puedes dejarlo en 0 o calcularlo según sea necesario
       descuento: 0, // Descuento inicial
       totalProducto: total,
+      tara: product.tara,
     });
 
     setProducts([]); // Limpiar la lista de productos después de seleccionar uno
@@ -241,11 +263,13 @@ useEffect(() => {
   const handleAddDetail = () => {
   
     setDescripcionProducto("");
+    setCodigoProducto("");
     setDetails((prev) => [...prev, selectedProduct]);
     setSelectedProduct({
       id: 0, 
       idEnvase: 0,
       cantidadPollo: 0,
+      productoPrincipalId: productoVentaSeleccionado.value,
       capacidadEnvase: 0,
       codigo: "",
       descripcionA: "",
@@ -259,24 +283,7 @@ useEffect(() => {
     });
   };
   const handleDetailChange = (value, name) => {
-    let detailCantidadPollo = 0;
-    if(details.length > 0){
-      detailCantidadPollo = details.reduce((sum, detail) => sum + detail.cantidadPollo, 0);
-    }
-    let stock = stockPollo - detailCantidadPollo;
-    if(name === "cantidad"){
-      if(value > stock){
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "La cantidad no puede ser mayor al stock de pollos.",
-        }).then(() => {
-          document.getElementsByName("cantidad")[0].focus(); // Enfoca el input cantidad
-        });
-        return;
-      }
-    }
-    // Actualizamos el campo que cambió
+
     setSelectedProduct((prev) => {
       
       const updatedProduct = { ...prev, [name]: value };
@@ -294,11 +301,15 @@ useEffect(() => {
   };
   // Manejador para el cambio de moneda
   const handleMonedaChange = (moneda) => {
-    setSelectedMoneda(moneda);
+    setSelectedMoneda(monedas.find(m => m.value === moneda));
   };
   // Manejador para los tipos de documentos
   const handleTipoDocumentoChange = (tipoDocumento) => {
     setSelectedTipoDocumento(tipoDocumento);
+  };
+  const handleProductoVentaChange = (value) => {
+    console.log(value)
+    setProductoVentaSeleccionado(value);
   };
     //manejador para clientes
     const handleClienteChange = async (value) => {
@@ -306,8 +317,22 @@ useEffect(() => {
       await fetchProveedores(sesionEmpId, selectedTipoDocumento, value);
       setLoading(false);
     };
+    const  handleEntidadSelect = (entidad) => {
+      setProveedor(()=> ({
+        id: entidad.id,
+        documento: entidad.documento,
+        numeroDocumento: entidad.numeroDocumento,
+        nombre: entidad.nombre,
+        estado: entidad.estado,
+        condicion: entidad.condicion,
+        direccion: entidad.direccion,
+      }));
+      setSelectedTipoDocumento(entidad.documento);
+  
+      setEntidades([]);
+    };
     // Maneja el cambio en el input de número de documento
-    const handleInputChangeProveedor = (value,name) => {
+    const handleInputChangeProveedor = async (value,name) => {
       if (name === 'numeroDocumento') {
         // Validar si el tipoDocumento en el estado actual es 'DNI'
         if(selectedTipoDocumento === 'DNI' && value.length > 8){
@@ -326,11 +351,31 @@ useEffect(() => {
           });
           return;
         }
+        if (value.length >= 2) {
+          const response = await autocompleteNroDocumento(value);
+          setEntidades(response);
+        }
+      }else if(name === 'nombre'){
+        if (value.length >= 2) {
+          const response = await autocompleteNombre(value);
+          setEntidades(response);
+        }
       }
-      setProveedor((prev) => ({
-        ...prev,
-        [name]: value
-      }));
+      setProveedor((prev) => {
+        if (prev.id > 0) {
+          return {
+            id: 0,
+            documento: "",
+            numeroDocumento: "",
+            nombre: "",
+            estado: "",
+            condicion: "",
+            direccion: "",
+          };
+        } else {
+          return { ...prev, [name]: value };
+        }
+      });
     };
     // Maneja la presión de teclas para el input del documento
     const handleKeyDown = (e) => {
@@ -344,7 +389,7 @@ useEffect(() => {
       const formattedMonth = today.toISOString().slice(0, 7); // YYYY-MM
 
       setFormData({
-        comprobante: "",
+        comprobante: formData.comprobante,
         serie: "",
         numero: "",
         fecha: formattedDate, // Fecha actual
@@ -356,7 +401,7 @@ useEffect(() => {
         subtotal: 0,
         impuesto: 0,
         total: 0,
-        estado: "",
+        estado: formData.estado,
         vendedor: userCode,
         observaciones: "",
         descuento: 0,
@@ -375,12 +420,12 @@ useEffect(() => {
         condicion: "",
         direccion: "",
       });
-      setSelectedMoneda(null);
-      setSelectedTipoDocumento(null);
+      //setSelectedTipoDocumento("");
       setSelectedProduct({
         id: 0, 
         idEnvase: 0,
         cantidadPollo: 0,
+        productoPrincipalId: productoVentaSeleccionado.value,
         capacidadEnvase: 0,
         codigo: "",
         descripcionA: "",
@@ -521,7 +566,7 @@ useEffect(() => {
           </div>
           <div>
             <SelectInput
-              value={selectedMoneda} // Valor seleccionado
+              value={selectedMoneda.value} // Valor seleccionado
               setValue={handleMonedaChange} // Manejador del cambio
               options={monedas} // Lista de opciones de monedas
               placeholder="Moneda"
@@ -559,7 +604,7 @@ useEffect(() => {
             />
           </div>
 
-          <div className="col-span-1 sm:col-span-2">
+          <div className="col-span-1 sm:col-span-2 relative">
             <TextInput
               name="nombre" // Add name attribute
               text={proveedor.nombre}
@@ -567,6 +612,19 @@ useEffect(() => {
               placeholder="Nombre"
               typeInput="text"
             />
+            {entidades.length > 0 && (
+              <ul className="absolute border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10 bg-white w-full">
+                {entidades.map((entidad, index) => (
+                  <li
+                  key={`${entidad.id}-${index}`} 
+                    onClick={() => handleEntidadSelect(entidad)}
+                    className="cursor-pointer p-2 hover:bg-gray-200 text-sm md:text-base"
+                  >
+                    {entidad.documento + " " + entidad.numeroDocumento + " " + entidad.nombre}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           {/* Separate div for the checkbox input */}
           <div className="col-span-1 sm:col-span-2">
@@ -641,13 +699,14 @@ useEffect(() => {
             />
           </div>
           <div className="col-span-1">
-            <TextAreaInput
-              text={codigoProductoVenta}
-              setText={(value) => setCodigoProductoVenta(value)}
-              placeholder="Código Producto"
-              typeInput="text"
-              disabled={true}
+          {productosVentas.length > 0 && (
+            <SelectWithOptions
+              options={productosVentas}
+              placeholder="Productos compra"
+              onChange={handleProductoVentaChange}
+              defaultValue={productoVentaSeleccionado}
             />
+          )}
           </div>
           <div className="">
             <TextInput

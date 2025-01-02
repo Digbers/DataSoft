@@ -5,23 +5,23 @@ import Swal from 'sweetalert2';
 import dayjs from 'dayjs';
 
 
-const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, formasCobros, cobro}) => {
+const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, formasPagos, pago}) => {
 
   useEffect(() => {
     if (comprobante) {
-      if(cobro){
-        console.log(cobro);
+      if(pago){
+        console.log(pago);
         console.log(comprobante);
               // Desestructuramos para transformar fechaCobro
-        const { fechaCobro, ...resto } = cobro;
+        const { fechaPago, ...resto } = pago;
 
         // Creamos el nuevo objeto con la fecha transformada
-        const nuevoCobro = {
+        const nuevoPago = {
           ...resto,
-          fechaCobro: dayjs(fechaCobro, 'YYYY-MM-DD'), // Convertimos a day.js
+          fechaPago: dayjs(fechaPago, 'YYYY-MM-DD'), // Convertimos a day.js
         };
-        console.log(nuevoCobro);
-        form.setFieldsValue(nuevoCobro);
+        console.log(nuevoPago);
+        form.setFieldsValue(nuevoPago);
       }
     } else {
       form.resetFields();
@@ -31,24 +31,24 @@ const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, forma
   const handleSubmit = async () => {
     try {
       //validar que no exeda el saldo del comprobante
-      if(cobro.montoCobrado > comprobante.saldo){
+      if(pago.montoPagado > comprobante.saldo){
         Swal.fire({
           icon: 'error',
           title: 'Oops...',
-          text: 'El monto cobrado no puede ser mayor al saldo del comprobante',
+          text: 'El monto pagado no puede ser mayor al saldo del comprobante',
         });
         return;
       }
       const values = await form.validateFields();
-      const fechaParseada = values.fechaCobro.format('YYYY-MM-DD');
-      const nuevoCobro = {
+      const fechaParseada = values.fechaPago.format('YYYY-MM-DD');
+      const nuevoPago = {
         ...values,
-        idComprobanteCompra: cobro.idComprobanteCompra,
-        id: cobro.id,
-        idEmpresa: cobro.idEmpresa,
-        fechaCobro: fechaParseada
+        idComprobanteCompra: pago.idComprobanteCompra,
+        id: pago.id,
+        idEmpresa: pago.idEmpresa,
+        fechaPago: fechaParseada
       }
-      onSave(nuevoCobro);
+      onSave(nuevoPago);
       onClose();
     } catch (error) {
       console.log(error);
@@ -65,7 +65,7 @@ const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, forma
   };
   return (
     <Modal
-      title={cobro ? 'Editar Cobro' : 'No existe cobro'}
+      title={pago ? 'Editar Pago' : 'No existe pago'}
       open={visible}
       onCancel={onClose}
       onOk={handleSubmit}
@@ -80,7 +80,7 @@ const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, forma
           {/* Campo Código */}
           <Col span={12}>
             <Form.Item
-              name="fechaCobro"
+              name="fechaPago"
               label="Fecha"
               rules={[{ required: true, message: 'Por favor ingrese la fecha' }]}
             >
@@ -89,14 +89,14 @@ const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, forma
           </Col>
           <Col span={12}>
             <Form.Item
-              name="formasDeCobros"
-              label="Forma de Cobro"
-              rules={[{ required: true, message: 'Por favor seleccione la forma de cobro' }]}
+              name="formaPagosEntity"
+              label="Forma de Pago"
+              rules={[{ required: true, message: 'Por favor seleccione la forma de pago' }]}
             >
               <Select>
-                {formasCobros && formasCobros.map((formaCobro, index) => (
-                  <Select.Option key={formaCobro.value || index} value={formaCobro.value}>
-                    {formaCobro.label}
+                {formasPagos && formasPagos.map((formaPago, index) => (
+                  <Select.Option key={formaPago.value || index} value={formaPago.value}>
+                    {formaPago.label}
                   </Select.Option>
                 ))}
               </Select>
@@ -107,7 +107,7 @@ const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, forma
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              name="monedas"
+              name="monedasEntity"
               label="Moneda"
               rules={[{ required: true, message: 'Por favor selecciona una moneda' }]}
             >
@@ -123,9 +123,9 @@ const EditModal = ({ visible, onClose, onSave, form, comprobante, monedas, forma
           {/* Campo Monto Cobrado */}
           <Col span={12}>
             <Form.Item
-              name="montoCobrado"
-              label="Monto Cobrado"
-              rules={[{ required: true, message: 'Por favor ingrese el monto cobrado' }]}
+              name="montoPagado"
+              label="Monto Pagado"
+              rules={[{ required: true, message: 'Por favor ingrese el monto pagado' }]}
             >
               <InputNumber 
                 min={0}
@@ -164,8 +164,8 @@ EditModal.propTypes = {
   form: PropTypes.object.isRequired,
   comprobante: PropTypes.object,
   monedas: PropTypes.array.isRequired,
-  formasCobros: PropTypes.array.isRequired,
-  cobro: PropTypes.object.isRequired,
+  formasPagos: PropTypes.array.isRequired,
+  pago: PropTypes.object.isRequired,
 };
 
 export default EditModal;

@@ -9,7 +9,7 @@ const MetodosPagos = ({ formData, availablePaymentMethods, selectedsPaymentMetho
 
     // Busca el método de pago efectivo (EFE) y lo agrega al array de métodos de pago
     useEffect(() => {
-      console.log(availablePaymentMethods);
+      //console.log(availablePaymentMethods);
       let metodoEfectivo = availablePaymentMethods.find((method) => method.value === 'EFE');
       if (metodoEfectivo) {
         setSelectedsPaymentMethod((prev) => {
@@ -78,7 +78,7 @@ const MetodosPagos = ({ formData, availablePaymentMethods, selectedsPaymentMetho
     return (
       <>
         {shouldShowPaymentTable && (
-          <div className="mt-2 col-span-1 sm:col-span-2">
+          <div className="mt-2 col-span-1 sm:col-span-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
               <div className="col-span-1">
                 <CustomButton 

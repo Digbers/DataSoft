@@ -4,11 +4,26 @@ import { useCallback, useEffect, useState } from "react";
 import { debounce } from "lodash";
 
 // Custom hook para manejar la lógica de VentasFast
-const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, setMonedas, setPaymentMethods, setCliente, setTipoDocumentos, setEstados, setStockPollo }) => {
+const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, setMonedas, setPaymentMethods, setCliente, setTipoDocumentos, setEstados, setStockPollo}) => {
   const [stockPolloEventSource, setStockPolloEventSource] = useState(null);
   const [numeroEventSource, setNumeroEventSource] = useState(null);
 
-  const buildRequestVenta = (formData, details, cliente, selectedMoneda, selectedsPaymentMethod, numero) => {
+  const buildRequestVenta = (formData, details, cliente, selectedMoneda, selectedsPaymentMethod, numero, productoVentaSeleccionado) => {
+
+    const addTimeToDate = (dateInput, time = '00:00:00') => {
+      const date = new Date(`${dateInput}T00:00:00`); // Zona horaria local sin ajuste a UTC
+    
+      const [hours, minutes, seconds] = time.split(':');
+      date.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds));
+    
+      // Formato en zona horaria local
+      return date.toLocaleString('sv-SE').replace(' ', 'T'); // Formato 'YYYY-MM-DDTHH:MM:SS'
+    };    
+      const fechaEmision = addTimeToDate(formData.fecha, new Date().toTimeString().slice(0, 8));
+      console.log("fechaEmision: " + fechaEmision);
+      console.log("fecha: " + formData.fecha);
+      const fechaVencimiento = addTimeToDate(formData.fecha, '23:59:59');
+      
       const requestDTO = {
         comprobantesVentasCabDTO: {
           idEmpresa: formData.empresa,
@@ -20,8 +35,8 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
           numero: numero,
           idCliente: cliente.id,
           idPuntoVenta: formData.puntoVenta,
-          fechaEmision: formData.fecha, // Asegúrate de que sea un `LocalDate`
-          fechaVencimiento: formData.fechaVencimiento || new Date().toISOString(),
+          fechaEmision: fechaEmision, 
+          fechaVencimiento: fechaVencimiento,
           comprobantesVentaEstado: {
               codigo: formData.estado,
               idEmpresa: formData.empresa,
@@ -29,7 +44,9 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
           comprobantesVentaDet: details.map((detail, index) => ({
               numero: index + 1, // Número del detalle
               descripcion: detail.descripcionA,
+              productoPrincipalId: detail.productoPrincipalId,
               cantidad: detail.cantidad,
+              cantidadPollo: detail.cantidadPollo,//agregue esto
               idProducto: detail.id,
               idEnvase: detail.idEnvase,
               peso: detail.peso,
@@ -62,9 +79,10 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
           moneda: selectedMoneda?.codigo || "SOL",
           usuarioCreacion: formData.usuarioCreacion,
         })) : [],
-        codigoProductoVenta: "POLLOSAC" // por ahora asi // de prueba
+        codigoProductoVenta: productoVentaSeleccionado.codigo // no se usa
       };
-
+      //console.log(requestDTO);
+      //return null;
       return requestDTO;
   };
 
@@ -98,6 +116,19 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
         icon: "error",
         title: "Error al cargar estados",
         text: "No se pudo obtener la lista de estados.",
+      });
+    }
+  }
+  const fetchProductosVentas = async (empresa) => {
+    try{
+      const response = await axios.get(`http://localhost:8080/api/inventario/productos/find-for-venta/${empresa}/NA`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching productos ventas:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error al cargar productos ventas",
+        text: "No se pudo obtener la lista de productos ventas.",
       });
     }
   }
@@ -260,11 +291,12 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
 
   const handleStockPollo = (codigoProducto) => {
     if (stockPolloEventSource) {
+      console.log("Closing stock pollo event source");
       stockPolloEventSource.close();
     }
     const newStockPolloEventSource = new EventSource(`http://localhost:8080/api/product-free-pass/stream-stock-product-venta/${codigoProducto}`);
     newStockPolloEventSource.onmessage = (event) => {
-      setStockPollo(event.data);
+      setStockPollo(parseInt(event.data));
     };
     newStockPolloEventSource.onerror = (error) => {
       console.error("Error en la conexión SSE para el stock de pollo", error);
@@ -272,24 +304,29 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
     };
     setStockPolloEventSource(newStockPolloEventSource);
   };
-
   // Cleanup de EventSources cuando el componente es desmontado
   useEffect(() => {
     return () => {
       if (numeroEventSource) {
         numeroEventSource.close();
       }
+    };
+  }, [numeroEventSource]);
+
+  // Cleanup de EventSources cuando el componente es desmontado
+  useEffect(() => {
+    return () => {
       if (stockPolloEventSource) {
         stockPolloEventSource.close();
       }
     };
-  }, [numeroEventSource, stockPolloEventSource]);
+  }, [stockPolloEventSource]);
 
 
-    // Función para obtener productos en base a la descripción
-    const fetchProducts = async (descripcion) => {
+    // Función para obtener productos en base a la descripción y el tipo de producto
+    const fetchProducts = async (descripcion, tipoProducto) => {
       try {
-        const response = await axios.get(`http://localhost:8080/api/inventario/productos/find-autocomplete/${descripcion}`);
+        const response = await axios.get(`http://localhost:8080/api/inventario/productos/find-autocomplete/${tipoProducto}/${descripcion}`);
         setProducts(response.data);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -318,6 +355,7 @@ const useVentasFast = ({ setComprobantes, setSeries, setNumero, setProducts, set
       fetchComprobante,
       buildRequestVenta,
       handleStockPollo,
+      fetchProductosVentas
     };
   };
 

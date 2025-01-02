@@ -2,12 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import TextInput from "../../../components/inputs/TextInput";
 import SelectInput from "../../../components/inputs/SelectInput";
 import TextAreaInput from "../../../components/inputs/TextAreaInput";
-//import { motion } from "framer-motion";
 import Swal from "sweetalert2";
 import { useAuth } from "../../../context/AuthContext";
 import useGastos  from "./useGastos";
 import CustomButton from "../../../components/inputs/CustomButton";
 import ClipLoader from 'react-spinners/ClipLoader';
+import useFetchEntidades from "../../../hooks/useFetchEntidades";
 
 const IngresarGastos = () => {
   //loader
@@ -19,9 +19,11 @@ const IngresarGastos = () => {
   const [estados, setEstados] = useState([]);
   const [comprobantes, setComprobantes] = useState([]);
   const [details, setDetails] = useState([]);
-  const [selectedMoneda, setSelectedMoneda] = useState("");
+  const [selectedMoneda, setSelectedMoneda] = useState({});
   const [tipoDocumentos, setTipoDocumentos] = useState([]);
-  const [selectedTipoDocumento, setSelectedTipoDocumento] = useState({});
+  const [selectedTipoDocumento, setSelectedTipoDocumento] = useState("");
+  const [metodoPago, setMetodoPago] = useState({});
+  const [entidades, setEntidades] = useState([]);
   const [proveedor, setProveedor] = useState({
     id: 0,
     documento: "",
@@ -75,8 +77,8 @@ const IngresarGastos = () => {
       setFormData((prev) => ({ ...prev, vendedor: userCode }));
     }
   }, [userCode, sesionEmpId, sesionPuntoVentaId]);
-
-  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, buildResponseCompra, fetchGuardarCompra } = useGastos({
+  const { autocompleteNombre, autocompleteNroDocumento } = useFetchEntidades();
+  const { fetchComprobantes, debouncedFetchProducts, fetchMonedas, fetchTipoDocumentos, fetchProveedores, fetchComprasEstados, buildResponseCompra, fetchGuardarCompra, fetchMetodosPago } = useGastos({
     setComprobantes,
     setProducts,
     setMonedas,
@@ -103,6 +105,9 @@ useEffect(() => {
         setSelectedTipoDocumento(tipoDocumento);
         const estado = await fetchComprasEstados(sesionEmpId);
         setFormData((prev) => ({ ...prev, estado }));
+
+        const metodosPago = await fetchMetodosPago(sesionEmpId);
+        setMetodoPago(metodosPago);
 
       } catch (error) {
         console.error("Error al cargar datos iniciales:", error);
@@ -133,7 +138,9 @@ useEffect(() => {
       fechaVencimiento: formattedDate
     }));
   }, []);
-
+  useEffect(() => {
+    console.log(metodoPago);
+  }, [metodoPago]);
 
     // Maneja el cambio de comprobante
   const handleComprobanteChange = async (value) => {
@@ -146,7 +153,8 @@ useEffect(() => {
         return; // Detener la ejecución si falta algún campo
       } 
       // Puedes agregar más validaciones si es necesario antes de guardar
-      const requestDTO = buildResponseCompra(formData,details,proveedor,selectedMoneda);
+
+      const requestDTO = buildResponseCompra(formData,details,proveedor,selectedMoneda, metodoPago);
       const ventaGuardadaId = await fetchGuardarCompra(requestDTO);
       if (ventaGuardadaId) {
         Swal.fire({
@@ -186,7 +194,7 @@ useEffect(() => {
     if(newDescripcion.length <1){
       setProducts([]);
     }
-    if (newDescripcion.length >= 3) {
+    if (newDescripcion.length >= 2) {
       debouncedFetchProducts(newDescripcion);
     }
   };
@@ -261,11 +269,25 @@ useEffect(() => {
   };
   // Manejador para el cambio de moneda
   const handleMonedaChange = (moneda) => {
-    setSelectedMoneda(moneda);
+    setSelectedMoneda(monedas.find(m => m.value === moneda));
   };
   // Manejador para los tipos de documentos
   const handleTipoDocumentoChange = (tipoDocumento) => {
     setSelectedTipoDocumento(tipoDocumento);
+  };
+  const  handleEntidadSelect = (entidad) => {
+    setProveedor(()=> ({
+      id: entidad.id,
+      documento: entidad.documento,
+      numeroDocumento: entidad.numeroDocumento,
+      nombre: entidad.nombre,
+      estado: entidad.estado,
+      condicion: entidad.condicion,
+      direccion: entidad.direccion,
+    }));
+    setSelectedTipoDocumento(entidad.documento);
+
+    setEntidades([]);
   };
     //manejador para clientes
     const handleClienteChange = async (value) => {
@@ -274,16 +296,55 @@ useEffect(() => {
       setLoading(false);
     };
     // Maneja el cambio en el input de número de documento
-    const handleInputChangeCliente = (value,name) => {
-      setProveedor((prev) => ({
-        ...prev,
-        [name]: value
-      }));
+    const handleInputChangeCliente = async (value,name) => {
+      if (name === 'numeroDocumento') {
+        // Validar si el tipoDocumento en el estado actual es 'DNI'
+        if(selectedTipoDocumento === 'DNI' && value.length > 8){
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "El número de documento no puede tener más de 8 caracteres para DNI.",
+          });
+          return;
+        }
+        if(selectedTipoDocumento === 'RUC' && value.length > 11){
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "El número de documento no puede tener más de 11 caracteres para RUC.",
+          });
+          return;
+        }
+        if (value.length >= 2) {
+          const response = await autocompleteNroDocumento(value);
+          setEntidades(response);
+        }
+      }else if(name === 'nombre'){
+        if (value.length >= 2) {
+          const response = await autocompleteNombre(value);
+          setEntidades(response);
+        }
+      }
+      setProveedor((prev) => {
+        if (prev.id > 0) {
+          return {
+            id: 0,
+            documento: "",
+            numeroDocumento: "",
+            nombre: "",
+            estado: "",
+            condicion: "",
+            direccion: "",
+          };
+        } else {
+          return { ...prev, [name]: value };
+        }
+      });
     };
     // Maneja la presión de teclas para el input del documento
     const handleKeyDown = (e) => {
       if (e.key === "Enter") {
-        handleClienteChange(proveedor.documento);
+        handleClienteChange(proveedor.numeroDocumento);
       }
     };
     const resetForm = () => {
@@ -292,7 +353,7 @@ useEffect(() => {
       const formattedMonth = today.toISOString().slice(0, 7); // YYYY-MM
 
       setFormData({
-        comprobante: "",
+        comprobante: formData.comprobante,
         serie: "",
         numero: "",
         fecha: formattedDate, // Fecha actual
@@ -304,7 +365,7 @@ useEffect(() => {
         subtotal: 0,
         impuesto: 0,
         total: 0,
-        estado: "",
+        estado: formData.estado,
         vendedor: userCode,
         observaciones: "",
         descuento: 0,
@@ -317,12 +378,12 @@ useEffect(() => {
       setProveedor({
         id: 0,
         documento: "",
+        numeroDocumento: "",
         nombre: "",
         tipoDocumento: "",
         direccion: "",
       });
-      setSelectedMoneda(null);
-      setSelectedTipoDocumento(null);
+      //setSelectedTipoDocumento("");
       setSelectedProduct({
         id: 0, 
         idEnvase: 0,
@@ -469,13 +530,15 @@ useEffect(() => {
             />
           </div>
           <div>
-            <SelectInput
-              value={selectedMoneda} // Valor seleccionado
-              setValue={handleMonedaChange} // Manejador del cambio
-              options={monedas} // Lista de opciones de monedas
-              placeholder="Moneda"
-              disabled={true}
-            />
+            {selectedMoneda.value && (
+              <SelectInput
+                value={selectedMoneda.value} // Valor seleccionado
+                setValue={handleMonedaChange} // Manejador del cambio
+                options={monedas} // Lista de opciones de monedas
+                placeholder="Moneda"
+                disabled={true}
+              />
+            )}
           </div>
           <div>
             <TextInput
@@ -500,8 +563,8 @@ useEffect(() => {
           <div>
             <TextInput
               name="documento" // Add name attribute
-              text={proveedor.documento}
-              setText={(value) => handleInputChangeCliente(value, "documento")}
+              text={proveedor.numeroDocumento}
+              setText={(value) => handleInputChangeCliente(value, "numeroDocumento")}
               placeholder="N° Doc"
               typeInput="text"
               onKeyDown={handleKeyDown} // Add onKeyDown handler
@@ -516,6 +579,19 @@ useEffect(() => {
               placeholder="Nombre"
               typeInput="text"
             />
+            {entidades.length > 0 && (
+              <ul className="absolute border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10 bg-white w-full">
+                {entidades.map((entidad, index) => (
+                  <li
+                  key={`${entidad.id}-${index}`} 
+                    onClick={() => handleEntidadSelect(entidad)}
+                    className="cursor-pointer p-2 hover:bg-gray-200 text-sm md:text-base"
+                  >
+                    {entidad.documento + " " + entidad.numeroDocumento + " " + entidad.nombre}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           {/* Separate div for the checkbox input */}
           <div className="col-span-2">

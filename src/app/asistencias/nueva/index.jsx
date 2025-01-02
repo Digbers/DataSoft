@@ -162,7 +162,7 @@ const NuevaAsistencia = () => {
     const dateColumns = rangeDates.map(date => ({
       title: (
         <div>
-          <div>{formatInTimeZone(parseISO(date), timeZone, 'dd/MM/yyyy')}</div>
+          <div className="w-fit">{formatInTimeZone(parseISO(date), timeZone, 'dd/MM/yyyy')}</div>
           <div>{formatInTimeZone(parseISO(date), timeZone, 'EEEE', { locale: es })}</div>
         </div>
       ),

@@ -138,11 +138,11 @@ const UserTable = () => {
   // Eliminar usuario
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/api/inventario/productos/${id}`);
-      message.success('User deleted successfully');
+      await axios.delete(`http://localhost:8080/api/inventario/productos/delete/${id}`);
+      message.success('Producto eliminado exitosamente');
       fetchData(pagination); // Refrescar la tabla
     } catch (error) {
-      message.error('Error deleting user');
+      message.error('Error eliminando producto');
     }
   };
 
@@ -333,7 +333,7 @@ const UserTable = () => {
           <Button onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
           <Popconfirm
             title="¿Estás seguro de eliminar este producto?"
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record.idProducto)}
             okText="Sí"
             cancelText="No"
           >

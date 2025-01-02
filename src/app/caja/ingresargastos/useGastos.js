@@ -5,8 +5,23 @@ import { debounce } from "lodash";
 
 // Custom hook para manejar la lógica de compras
 const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, setTipoDocumentos, setEstados }) => {
+  
 
-  const buildResponseCompra = (formData, details, proveedor, selectedMoneda) => {
+  const buildResponseCompra = (formData, details, proveedor, selectedMoneda, metodoPago) => {
+    console.log("metodoPAgop building");
+    console.log(metodoPago);
+    const addTimeToDate = (dateInput, time = '00:00:00') => {
+      const date = dateInput ? new Date(dateInput) : new Date();
+    
+      // Divide la hora proporcionada y la asigna a la fecha
+      const [hours, minutes, seconds] = time.split(':');
+      date.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds));
+    
+      return date.toISOString().slice(0, 19); // Formato 'YYYY-MM-DDTHH:MM:SS'
+    };      
+  
+    const fechaEmision = addTimeToDate(formData.fecha, new Date().toTimeString().slice(0, 8));
+    const fechaVencimiento = addTimeToDate(formData.fechaVencimiento, '23:59:59');
 
     const requestDTO = {
       comprobantesComprasCa: {
@@ -19,8 +34,8 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
         numero: formData.numero,
         idProveedor: proveedor.id,
         idPuntoVenta: formData.puntoVenta,
-        fechaEmision: formData.fecha, // Formato `LocalDate`
-        fechaVencimiento: formData.fechaVencimiento || new Date().toISOString(),
+        fechaEmision: fechaEmision, 
+        fechaVencimiento: fechaVencimiento,
         fechaIngreso: formData.fechaIngreso || new Date().toISOString(),
         periodoRegistro: `${formData.periodoRegistro}-01`,
         tipoCambio: formData.tipoCambio || 1,
@@ -34,9 +49,9 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
           descripcion: detail.descripcionA,
           idProducto: detail.id,
           idEnvase: detail.idEnvase,
-          peso: detail.peso,
+          peso: detail.peso? detail.peso : 0,
           precioUnitario: detail.precioUnitario,
-          descuento: detail.descuento,
+          descuento: detail.descuento? detail.descuento : 0,
           usuarioCreacion: formData.usuarioCreacion,
         })),
         comprobantesComprasCuotas: formData.estado === "CRE" ? [{
@@ -56,14 +71,13 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
       generarMovimiento: formData.generarMovimiento || false,
       comprobantesComprasPagos: formData.estado !== "CRE" ? [{
         idEmpresa: formData.empresa,
-        formaPagos: "EFE",
+        formaPagos: metodoPago.value,
         montoCobrado: formData.total,
         fechaCobro: formData.fecha,
-        descripcion: "",
-        moneda: selectedMoneda?.codigo || "SOL",
+        descripcion: "Pagado en el punto de venta",
+        moneda: selectedMoneda.value,
         usuarioCreacion: formData.usuarioCreacion,
-      }] : []
-      //codigoProductoCompra: "POLLOSAC"
+      }] : [],
     };
     console.log(requestDTO);
     return requestDTO;
@@ -78,9 +92,8 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
         label: estado.descripcion,
       }))
       .filter((estado) => ["CRE", "CAN"].includes(estado.value));
-      console.log(estados);
       setEstados(estados);
-      return estados.find((estado) => estado.value === "CRE")?.value;
+      return estados.find((estado) => estado.value === "CAN")?.value;
     } catch (error) {
       console.error("Error fetching estados:", error);
       Swal.fire({
@@ -159,17 +172,36 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
     try {
       const response = await axios.get(`http://localhost:8080/api/finanzas/monedas/find-by-empresa/${empresa}`);
       const monedas = response.data.map((moneda) => ({
-        value: moneda.codigo,
+        value: moneda.id,
         label: moneda.nombre,
+        codigo: moneda.codigo,
       }));
       setMonedas(monedas);
-      return monedas.find((moneda) => moneda.value === "SOL")?.value;
+      return monedas.find((moneda) => moneda.codigo === "SOL");
     } catch (error) {
       console.error("Error fetching monedas:", error);
       Swal.fire({
         icon: "error",
         title: "Error al cargar monedas",
         text: "No se pudo obtener la lista de monedas.",
+      });
+    }
+  };
+  const fetchMetodosPago = async (empresa) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/finanzas/metodos-pagos/find-by-empresa/${empresa}`);
+      const paymentMethods = response.data.map((paymentMethod) => ({
+        value: paymentMethod.id,
+        label: paymentMethod.descripcion,
+        codigo: paymentMethod.codigo,
+      }));
+      return paymentMethods.find((paymentMethod) => paymentMethod.codigo === "EFE");
+    } catch (error) {
+      console.error("Error al obtener los métodos de pago:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error al obtener los métodos de pago",
+        text: "No se pudo obtener la lista de métodos de pago.",
       });
     }
   };
@@ -225,6 +257,7 @@ const useCompras = ({ setComprobantes, setProducts, setMonedas, setProveedor, se
       fetchTipoDocumentos,
       fetchComprasEstados,
       buildResponseCompra,
+      fetchMetodosPago
     };
   };
 

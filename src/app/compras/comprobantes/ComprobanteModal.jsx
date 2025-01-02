@@ -1,162 +1,251 @@
 import PropTypes from 'prop-types';
-import { Modal, Form, Input, Select, Row, Col, InputNumber, Checkbox } from 'antd';
+import { Modal, Form, Input, Select, Row, Col, message, Table } from 'antd';
+import axios from "../../../config/axiosConfig";
+import { useEffect, useState } from "react";
 
-const ComprobanteModal = ({ visible, onCancel, onOk, form, producto, monedas, comprobantesTipos, estados }) => {
+const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, comprobantesTipos, estados }) => {
+  const [detalle, setDetalle] = useState([]);
+
+  // Cargar los detalles del comprobante
+  const fetchDetalle = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/compras/comprobantes/find-detalle/${comprobante.id}`);
+      setDetalle(response.data);
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error fetching detalle:', error);
+      message.error('Error fetching detalle');
+    }
+  };
+
+  useEffect(() => {
+    if (comprobante?.id) {
+      fetchDetalle();
+      console.log(comprobante);
+      console.log(comprobantesTipos)
+    }
+  }, [comprobante]);
+
+  // Columnas para la tabla de detalles
+  const detalleColumns = [
+    { title: 'N°', dataIndex: 'numero', key: 'numero' },
+    { title: 'Codigo', dataIndex: 'codigo', key: 'codigo' },
+    { title: 'Descripción', dataIndex: 'descripcion', key: 'descripcion' },
+    { title: 'Unidad', dataIndex: 'unidad', key: 'unidad' },
+    { title: 'Cantidad', dataIndex: 'cantidad', key: 'cantidad' },
+    { title: 'Cantidad Pollo', dataIndex: 'cantidadPollo', key: 'cantidadPollo' },
+    { title: 'Peso', dataIndex: 'peso', key: 'peso' },
+    { title: 'Precio Unitario', dataIndex: 'precioUnitario', key: 'precioUnitario' },
+    { title: 'Descuento', dataIndex: 'descuento', key: 'descuento' },
+    { title: 'Total', dataIndex: 'total', key: 'total' },
+  ];
+
   return (
     <Modal
-      title={producto ? 'Editar Producto' : 'Nuevo Producto'}
-      open={visible} // Cambiar 'visible' por 'open'
+      title={comprobante && comprobante.id ? `${comprobante.serie} - ${comprobante.numero} - ${comprobante.fechaEmision  ? comprobante.fechaEmision .split('T')[0] : 'N/A'} - ${comprobante.nombreProveedor}` : 'No existe el comprobante'}
+      open={visible}
       onCancel={onCancel}
-      onOk={onOk}
-      okText="Guardar"
-      cancelText="Cancelar"
+      footer={null}
+      width="80%"
+      className="dark:bg-gray-800 dark:text-gray-200"
     >
-      <Form 
-        form={form} 
-        layout="vertical" 
-        initialValues={{ 
-          comprobanteTipo: comprobantesTipos[0]?.value,  // Selecciona el primer tipo por defecto
-          moneda: monedas[0]?.value,  // Selecciona el primer envase por defecto
-          estado: estados[0]?.value,
-        }}
-      >
+      <Form form={form} layout="vertical">
+        {/* Fila 1 */}
         <Row gutter={16}>
-          {/* Campo Código */}
-          <Col span={12}>
-            <Form.Item
-              name="codigo"
-              label="Código"
-              rules={[{ required: true, message: 'Por favor ingrese el código' }]}
-            >
-              <Input />
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Fecha de Emisión</span>}>
+              <Input 
+                value={comprobante?.fechaEmision ? comprobante.fechaEmision.split('T')[0] : ''}
+                disabled
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
+              />
             </Form.Item>
           </Col>
-
-          {/* Campo Nombre */}
-          <Col span={12}>
-            <Form.Item
-              name="nombre"
-              label="Nombre"
-              rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
-            >
-              <Input />
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Fecha de Creación</span>}>
+              <Input 
+                value={`${comprobante?.fechaCreacion 
+                  ? comprobante.fechaCreacion.split('T')[0] + ' ' + comprobante.fechaCreacion.split('T')[1]?.split('.')[0] 
+                  : ''}`}
+                disabled 
+                className="
+                  !opacity-100 
+                  !dark:text-gray-300 
+                  !text-gray-700 
+                  !dark:bg-gray-700 
+                  !bg-gray-100 
+                  !cursor-not-allowed
+                "
+              />
             </Form.Item>
           </Col>
-        </Row>
-
-        <Row gutter={16}>
-          {/* Campo Tipo */}
-          <Col span={12}>
-            <Form.Item
-              name="tipo"
-              label="Tipo"
-              rules={[{ required: true, message: 'Por favor seleccione el tipo' }]}
-            >
-              <Select>
-                {comprobantesTipos && comprobantesTipos.map((comprobanteTipo, index) => (
-                  <Select.Option key={comprobanteTipo.value || index} value={comprobanteTipo.value}>
-                    {comprobanteTipo.label}
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Tipo de Comprobante</span>}>
+              <Select 
+                value={comprobante?.comprobantesTipos.codigo || ''} 
+                disabled 
+                className="w-full"
+              >
+                {comprobantesTipos.map((tipo) => (
+                  <Select.Option 
+                    key={tipo.value} 
+                    value={tipo.value} 
+                    className="
+                    !opacity-100 
+                    !dark:text-gray-300 
+                    !text-gray-700 
+                    !dark:bg-gray-700 
+                    !bg-gray-100 
+                    !cursor-not-allowed
+                  "
+                  >
+                    {tipo.label}
                   </Select.Option>
                 ))}
               </Select>
             </Form.Item>
           </Col>
+        </Row>
 
-          {/* Campo Cantidad */}
-          <Col span={12}>
-            <Form.Item
-              name="cantidadProducto"
-              label="Cantidad"
-              rules={[{ required: true, message: 'Por favor ingrese la cantidad' }]}
-            >
-              <InputNumber 
-                min={0} 
-                style={{ width: '100%' }} 
-                onKeyPress={(e) => {
-                  if (!/^\d+$/.test(e.key)) {
-                    e.preventDefault();
-                  }
-                }}
+        {/* Fila 2 */}
+        <Row gutter={16}>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Serie</span>}>
+              <Input 
+                value={comprobante?.serie || ''} 
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Número</span>}>
+              <Input 
+                value={comprobante?.numero || ''} 
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Estado</span>}>
+              <Select 
+                value={comprobante?.comprobanteCompraEstados.codigo || ''} 
+                disabled 
+                className="w-full"
+              >
+                {estados.map((estado) => (
+                  <Select.Option 
+                    key={estado.value} 
+                    value={estado.value} 
+                    className="!dark:bg-gray-700 !dark:text-gray-300 !dark:hover:bg-gray-600"
+                  >
+                    {estado.label}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
           </Col>
         </Row>
 
+        {/* Fila 3 */}
         <Row gutter={16}>
-          {/* Campo para seleccionar envase */}
-          <Col span={12}>
-            <Form.Item
-              name="envase"
-              label="Envase"
-              rules={[{ required: true, message: 'Por favor selecciona un envase' }]}
-            >
-              <Select>
-                {monedas && monedas.map((moneda, index) => (
-                  <Select.Option key={moneda.value || index} value={moneda.value}>
+          
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Número de Documento del Proveedor</span>}>
+              <Input 
+                value={comprobante?.nroDocumentoProveedor || ''}
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Nombre/Razón Social del Proveedor</span>}>
+              <Input 
+                value={comprobante?.nombreProveedor || ''}
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Moneda</span>}>
+              <Select 
+                value={comprobante?.codigoMoneda || ''} 
+                disabled 
+                className="w-full"
+              >
+                {monedas.map((moneda) => (
+                  <Select.Option 
+                    key={moneda.value} 
+                    value={moneda.value} 
+                    className="!dark:bg-gray-700 !dark:text-gray-300 !dark:hover:bg-gray-600"
+                  >
                     {moneda.label}
                   </Select.Option>
                 ))}
               </Select>
             </Form.Item>
           </Col>
+        </Row>
 
-          {/* Campo Peso Total */}
-          <Col span={12}>
-            <Form.Item
-              name="pesoTotal"
-              label="Peso total"
-              rules={[{ required: true, message: 'Por favor ingrese el peso total' }]}
-            >
-              <InputNumber 
-                min={0} 
-                style={{ width: '100%' }} 
-                onKeyPress={(e) => {
-                  if (!/^\d+$/.test(e.key)) {
-                    e.preventDefault();
-                  }
-                }}
+        {/* Fila 4 */}
+        <Row gutter={16}>
+          <Col xs={24} md={24}>
+            <Form.Item label={<span className="dark:text-gray-300">Observaciones</span>}>
+              <Input.TextArea 
+                value={comprobante?.observaciones || ''} 
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
             </Form.Item>
           </Col>
+          
         </Row>
 
-        <Row gutter={16}>
-          {/* Checkboxes Generar Stock y Estado */}
-          <Col span={12}>
-            <Form.Item>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Form.Item
-                  name="generarStock"
-                  valuePropName="checked"
-                  style={{ marginRight: '10px' }}  
-                >
-                  <Checkbox>Generar stock</Checkbox>
-                </Form.Item>
-                <Form.Item
-                  name="estado"
-                  valuePropName="checked"
-                >
-                  <Checkbox>Estado</Checkbox>
-                </Form.Item>
-              </div>
+        {/* Tabla de detalles */}
+        <Row>
+          <Col span={24}>
+            <Table
+              dataSource={detalle}
+              columns={detalleColumns}
+              pagination={false}
+              rowKey="id"
+              bordered
+              className="dark:border-gray-700"
+              rowClassName="dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              scroll={{ x: '100%' }} 
+            />
+          </Col>
+        </Row>
+
+        {/* Subtotal, Impuesto y Total */}
+        <Row gutter={16} style={{ marginTop: '16px' }}>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Subtotal</span>}>
+              <Input 
+                value={comprobante?.subtotal || ''} 
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
+              />
             </Form.Item>
           </Col>
-
-          {/* Campo Precio Unitario */}
-          <Col span={12}>
-            <Form.Item
-              name="precioSugerido"
-              label="Precio Unitario"
-              rules={[{ required: true, message: 'Por favor ingrese el precio unitario' }]}
-            >
-              <InputNumber 
-                min={0} 
-                style={{ width: '100%' }} 
-                onKeyPress={(e) => {
-                  if (!/^\d+$/.test(e.key)) {
-                    e.preventDefault();
-                  }
-                }}
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Impuesto</span>}>
+              <Input 
+                value={comprobante?.impuesto || ''} 
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item label={<span className="dark:text-gray-300">Total</span>}>
+              <Input 
+                value={comprobante?.total || ''} 
+                disabled 
+                className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
             </Form.Item>
           </Col>
@@ -170,7 +259,7 @@ ComprobanteModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
   onOk: PropTypes.func.isRequired,
   form: PropTypes.object.isRequired,
-  producto: PropTypes.object,
+  comprobante: PropTypes.object.isRequired,
   monedas: PropTypes.array.isRequired,
   comprobantesTipos: PropTypes.array.isRequired,
   estados: PropTypes.array.isRequired,

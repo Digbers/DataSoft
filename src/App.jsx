@@ -1,7 +1,6 @@
 
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import './App.css'
-import HomePage from './pages/HomePage';
 import MainPage from './pages/MainPage';
 import Login from './features/login/Login';
 import { useAuth } from './context/AuthContext';
@@ -70,16 +69,6 @@ function App() {
           }
         />
         
-        <Route
-          path="/home"
-          element={
-            isAuthenticated ? (
-              <HomePage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
 
         <Route path="*" element={<NotFoundPage />} />
           

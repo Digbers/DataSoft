@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import avicola from '../../assets/avicola.png';
+//import avicola from '../../assets/avicola.png';
+import milagro from '../../assets/ac-el-milagro.png';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import SelectInput from '../../components/inputs/SelectInput';
 import { useAuth } from '../../context/AuthContext';
@@ -146,7 +147,7 @@ const EmpresaAlmacen = ({ user, userCode }) => {
 
       {/* Imagen del logotipo */}
       <div className="flex flex-col items-center justify-center mb-4 md:mb-0 hidden md:flex">
-        <img className="w-28 h-28 md:w-48 md:h-48 object-contain animate-pulse" src={avicola} alt="Avicola Logo" />
+        <img className="w-28 h-28 md:w-48 md:h-48 object-contain animate-pulse" src={milagro} alt="Avicola Logo" />
       </div>
       {/* Formulario de Login */}
       <div className="w-full max-w-md p-6 bg-white bg-opacity-80 backdrop-blur-lg rounded-3xl shadow-xl">

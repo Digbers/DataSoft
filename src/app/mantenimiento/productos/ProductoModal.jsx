@@ -146,10 +146,12 @@ const ProductoModal = ({ visible, onCancel, onOk, form, producto, envases, tipos
                 min={0} 
                 style={{ width: '100%' }} 
                 onKeyPress={(e) => {
-                  if (!/^\d+$/.test(e.key)) {
+                  // Permite números y un solo punto decimal
+                  if (!/^\d*\.?\d*$/.test(e.key)) {
                     e.preventDefault();
                   }
                 }}
+                step={0.01}  // Permite decimales con paso de 0.01
               />
             </Form.Item>
           </Col>
@@ -164,10 +166,12 @@ const ProductoModal = ({ visible, onCancel, onOk, form, producto, envases, tipos
                 min={0} 
                 style={{ width: '100%' }} 
                 onKeyPress={(e) => {
-                  if (!/^\d+$/.test(e.key)) {
+                  // Permite números y un solo punto decimal
+                  if (!/^\d*\.?\d*$/.test(e.key)) {
                     e.preventDefault();
                   }
                 }}
+                step={0.01}  // Permite decimales con paso de 0.01
               />
             </Form.Item>
           </Col>

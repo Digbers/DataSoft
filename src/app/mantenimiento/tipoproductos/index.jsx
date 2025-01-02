@@ -193,15 +193,15 @@ const TablaTiposProductos = () => {
         key: 'actions',
         render: (text, record) => (
           <>
-            <Button key={`edit-${record.id}`} onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
+            <Button key={`edit-${record.idTipoProducto}`} onClick={() => handleEdit(record)} icon={<i className="fas fa-edit" />} />
             <Popconfirm
-              key={`delete-${record.id}`}
+              key={`delete-${record.idTipoProducto}`}
               title="¿Estás seguro de eliminar este tipo de producto?"
-              onConfirm={() => handleDelete(record.id)}
+              onConfirm={() => handleDelete(record.idTipoProducto)}
               okText="Sí"
               cancelText="No"
             >
-              <Button key={`delete-btn-${record.id}`} danger icon={<i className="fas fa-trash" />} />
+              <Button key={`delete-btn-${record.idTipoProducto}`} danger icon={<i className="fas fa-trash" />} />
             </Popconfirm>
           </>
         ),

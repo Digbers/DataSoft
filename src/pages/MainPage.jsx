@@ -90,7 +90,7 @@ const MainPage = ({ user, userCode, sesionEmpId, sesionAlmacenId, sesionPuntoVen
   {/* Contenedor principal con efecto de glassmorphism */}
   <div className="relative flex-1 p-2 bg-white bg-opacity-20 backdrop-blur-lg dark:bg-gray-900 dark:bg-opacity-20 overflow-hidden w-full h-full rounded shadow-xl dark:text-gray-200">
     <div className="flex justify-end bg-white dark:bg-gray-900 rounded-md  p-2">
-      <p className="mt-4 text-lg text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">
+      <p className="mt-4 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600 text-sm md:text-lg hidden md:block">
         Bienvenido, {user} a {datosEmp.nombreEmpresa}.
       </p>
       <ThemeToggleButton />

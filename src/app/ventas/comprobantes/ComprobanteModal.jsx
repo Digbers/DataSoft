@@ -29,7 +29,9 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
   // Columnas para la tabla de detalles
   const detalleColumns = [
     { title: 'N°', dataIndex: 'numero', key: 'numero' },
+    { title: 'Codigo', dataIndex: 'codigo', key: 'codigo' },
     { title: 'Descripción', dataIndex: 'descripcion', key: 'descripcion' },
+    { title: 'Unidad', dataIndex: 'unidad', key: 'unidad' },
     { title: 'Cantidad', dataIndex: 'cantidad', key: 'cantidad' },
     { title: 'Cantidad Pollo', dataIndex: 'cantidadPollo', key: 'cantidadPollo' },
     { title: 'Peso', dataIndex: 'peso', key: 'peso' },
@@ -40,7 +42,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
 
   return (
     <Modal
-      title={comprobante && comprobante.id ? `${comprobante.serie} - ${comprobante.numero} - ${comprobante.fechaEmision} - ${comprobante.nombreCliente}` : 'No existe el comprobante'}
+      title={comprobante && comprobante.id ? `${comprobante.serie} - ${comprobante.numero} - ${comprobante.fechaEmision  ? comprobante.fechaEmision .split('T')[0] : 'N/A'} - ${comprobante.nombreCliente}` : 'No existe el comprobante'}
       open={visible}
       onCancel={onCancel}
       footer={null}
@@ -53,7 +55,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Fecha de Emisión</span>}>
               <Input 
-                value={comprobante?.fechaEmision || ''} 
+                value={comprobante?.fechaEmision ? comprobante.fechaEmision.split('T')[0] : ''}
                 disabled
                 className="!opacity-100 !dark:text-gray-300 !text-gray-700 !dark:bg-gray-700 !bg-gray-100 !cursor-not-allowed"
               />
@@ -62,7 +64,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
           <Col xs={24} md={8}>
             <Form.Item label={<span className="dark:text-gray-300">Fecha de Vencimiento</span>}>
               <Input 
-                value={comprobante?.fechaVencimiento || ''} 
+                value={comprobante?.fechaVencimiento ? comprobante.fechaVencimiento.split('T')[0] : ''}
                 disabled 
                 className="
                   !opacity-100 
@@ -211,6 +213,7 @@ const ComprobanteModal = ({ visible, onCancel, form, comprobante, monedas, compr
               bordered
               className="dark:border-gray-700"
               rowClassName="dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              scroll={{ x: '100%' }} 
             />
           </Col>
         </Row>
